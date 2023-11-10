@@ -88,11 +88,28 @@ df <- df %>%
  mutate(X1appDaysUrea = ifelse(FTDF_Urea == 0, -1, X1appDaysUrea),
         X2appDaysUrea = ifelse(NoFertilizerAppln < 3, -1, X2appDaysUrea))
 
+df <- df %>%
+  rows_update(tibble(ID = df$ID[is.na(df$X2tdUrea) & df$X1tdUrea == 0 & df$X1appDaysUrea == -1],
+                     X2tdUrea = 0, X2appDaysUrea = -1), by = "ID")
+df <- df %>%
+  rows_update(tibble(ID = df$ID[is.na(df$X2appDaysUrea)],
+                     X2appDaysUrea = mapply(function(dt, dn, dh, maxd) {
+                       max_pos <- as.numeric(max(dh - dt, dh - dn, na.rm = TRUE))
+                       runif(1, 1, min(max_pos, maxd))
+                     }, dt = df[is.na(df$X2appDaysUrea),]$CropTillageDate,
+                     dn = df[is.na(df$X2appDaysUrea),]$RcNursEstDate,
+                     dh = df[is.na(df$X2appDaysUrea),]$Harv_date,
+                     MoreArgs = list(maxd = max(df$X2appDaysUrea, na.rm = TRUE)))),
+              by = "ID")
+
+
 ## adjust wrong values ##
 df <- df %>%
  mutate(X1appDaysUrea = ifelse(X1appDaysUrea == 332, NA, X1appDaysUrea),
         SeedlingsPerPit = ifelse(SeedlingsPerPit == 442, NA, SeedlingsPerPit),
-        Harv_hand_rent = ifelse(Harv_hand_rent == 60000, NA, Harv_hand_rent))
+        Harv_hand_rent = ifelse(Harv_hand_rent == 60000, NA, Harv_hand_rent),
+        Harv_date = ifelse(SeedingSowingTransplanting - Harv_date > 0,
+                           Harv_date + 365, Harv_date))
 
 ## new variables ##
 df <- df %>%
