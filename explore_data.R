@@ -1,4 +1,5 @@
 library(dplyr)
+library(ggplot2)
 
 df <- read.csv("./data/Train.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
@@ -201,4 +202,26 @@ table(df$RcNursEstDate - df$CropTillageDate < 0)
 table(df$RcNursEstDate - df$SeedingSowingTransplanting < 0)
 table(df$CropTillageDate - df$SeedingSowingTransplanting < 0)
 table(df$SeedingSowingTransplanting - df$Harv_date < 0) # the three false are incorrect
+table(df$SeedingSowingTransplanting - df$Harv_date > -40)
+df[which(df$SeedingSowingTransplanting - df$Harv_date > -50 &
+        df$SeedingSowingTransplanting - df$Harv_date < 0), ]
+table(months(df$Harv_date))
+df %>% rowwise() %>%
+        mutate(LPrepDate = min(RcNursEstDate, CropTillageDate, na.rm = TRUE),
+               X2Date = LPrepDate + X1appDaysUrea + X2appDaysUrea) %>%
+        filter(!is.na(X2Date) & X2Date - Harv_date >= 0) %>%
+        select(Harv_date, X2Date, SeedingSowingTransplanting,
+               RcNursEstDate, CropTillageDate, Threshing_date, NoFertilizerAppln) %>%
+        View()
 table(df$Harv_date - df$Threshing_date <= 0)
+
+
+View(df[which(df$Yield / df$Acre > 15000),])
+
+ggplot(df, aes(x = Yield/Acre, group = District)) +
+        geom_histogram(aes(y = stat(density) * 80), bins = 80) +
+        facet_wrap(~District)
+
+ftable(df$Block, df$Yield / df$Acre > 10000)
+ftable(df$Block, df$Yield / df$Acre < 50)
+df %>% group_by(Block) %>% summarise(n(), length(unique(Yield/Acre)))

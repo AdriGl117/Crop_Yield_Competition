@@ -16,76 +16,47 @@ df <- df %>% mutate(across(c(District, Block, CropEstMethod,
                              MineralFertAppMethod.1, Harv_method, Threshing_method,
                              Stubble_use), as.factor))
 
-## rename unnamed factor level ##
-levels(df$TransplantingIrrigationSource)[
- levels(df$TransplantingIrrigationSource) == ""] <- "unknown"
-levels(df$TransplantingIrrigationPowerSource)[
- levels(df$TransplantingIrrigationPowerSource) == ""] <- "unknown"
-levels(df$PCropSolidOrgFertAppMethod)[
- levels(df$PCropSolidOrgFertAppMethod) == ""] <- "unknown"
-# no second dose applied
-ftable(df$MineralFertAppMethod.1, df$NoFertilizerAppln)
-levels(df$MineralFertAppMethod.1)[levels(df$MineralFertAppMethod.1) == ""] <- "no2ndDose"
+# error in District, one observation in Gurua has as District Jamui instead of Gaya
+ftable(df$District, df$Block)
+
+## factor variables to dummy columns ##
+df = df %>%
+  fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
+    "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
+    "MineralFertAppMethod", "MineralFertAppMethod.1"),
+    remove_selected_columns = TRUE)
 
 ## character columns to dummy columns ##
-df <- df %>% mutate(mapply(function(x, methods_vec) {
- output <- as.logical(methods_vec %in% x)
- names(output) <- paste("LPM", methods_vec, sep = "_")
- output}, strsplit(LandPreparationMethod, " "),
- MoreArgs = list(methods_vec = unique(unlist(strsplit(LandPreparationMethod, " "))))) %>%
-  t() %>% as_tibble())
-
-df <- df %>% mutate(mapply(function(x, methods_vec) {
- output <- as.logical(methods_vec %in% x)
- names(output) <- paste("NDF", methods_vec, sep = "_")
- output}, strsplit(NursDetFactor, " "),
- MoreArgs = list(methods_vec = unique(unlist(strsplit(NursDetFactor, " "))))) %>%
-  t() %>% as_tibble())
-
-df <- df %>% mutate(mapply(function(x, methods_vec) {
- output <- as.logical(methods_vec %in% x)
- names(output) <- paste("TDF", methods_vec, sep = "_")
- output}, strsplit(TransDetFactor, " "),
- MoreArgs = list(methods_vec = unique(unlist(strsplit(TransDetFactor, " "))))) %>%
-  t() %>% as_tibble())
-
-df <- df %>% mutate(mapply(function(x, methods_vec) {
- output <- as.logical(methods_vec %in% x)
- names(output) <- paste("OF", methods_vec, sep = "_")
- output}, strsplit(OrgFertilizers, " "),
- MoreArgs = list(methods_vec = unique(unlist(strsplit(OrgFertilizers, " "))))) %>%
-  t() %>% as_tibble())
-
-df <- df %>% mutate(mapply(function(x, methods_vec) {
- output <- as.logical(methods_vec %in% x)
- names(output) <- paste("CF", methods_vec, sep = "_")
- output}, strsplit(CropbasalFerts, " "),
- MoreArgs = list(methods_vec = unique(unlist(strsplit(CropbasalFerts, " "))))) %>%
-  t() %>% as_tibble())
-
-df <- df %>% mutate(mapply(function(x, methods_vec) {
- output <- as.logical(methods_vec %in% x)
- names(output) <- paste("FTDF", methods_vec, sep = "_")
- output}, strsplit(FirstTopDressFert, " "),
- MoreArgs = list(methods_vec = unique(unlist(strsplit(FirstTopDressFert, " "))))) %>%
-  t() %>% as_tibble())
+df = df %>%
+  fastDummies::dummy_cols(c("LandPreparationMethod", "NursDetFactor",
+      "TransDetFactor", "OrgFertilizers", "CropbasalFerts", "FirstTopDressFert"),
+      split = " ", remove_selected_columns = TRUE)
 
 ## create target variable ##
-df <- df %>% mutate(Yield_Acre = Yield / Acre)
+#df <- df %>% mutate(Yield_Acre = Yield / Acre)
+
+## adjust wrong values ##
+df <- df %>%
+  mutate(X1appDaysUrea = ifelse(X1appDaysUrea == 332, NA, X1appDaysUrea),
+         SeedlingsPerPit = ifelse(SeedlingsPerPit == 442, NA, SeedlingsPerPit),
+         Harv_hand_rent = ifelse(Harv_hand_rent == 60000, NA, Harv_hand_rent),
+         Harv_date = as.Date(ifelse(SeedingSowingTransplanting - Harv_date > 0,
+                                    Harv_date + 365, Harv_date), origin = "1970-01-01"))
+
 
 ## replace NAs##
 df <- df %>%
- mutate(Ganaura = ifelse(OF_Ganaura == 0, 0, Ganaura),
-        CropOrgFYM = ifelse(OF_FYM == 0, 0, CropOrgFYM),
-        BasalUrea = ifelse(CF_Urea == 0, 0, BasalUrea),
-        BasalDAP = ifelse(CF_DAP == 0, 0, BasalDAP),
-        X1tdUrea = ifelse(FTDF_Urea == 0, 0, X1tdUrea),
+ mutate(Ganaura = ifelse(OrgFertilizers_Ganaura == 0, 0, Ganaura),
+        CropOrgFYM = ifelse(OrgFertilizers_FYM == 0, 0, CropOrgFYM),
+        BasalUrea = ifelse(CropbasalFerts_Urea == 0, 0, BasalUrea),
+        BasalDAP = ifelse(CropbasalFerts_DAP == 0, 0, BasalDAP),
+        X1tdUrea = ifelse(FirstTopDressFert_Urea == 0, 0, X1tdUrea),
         X2tdUrea = ifelse(NoFertilizerAppln < 3, 0, X2tdUrea))
 # no third dose of chemical fertilizer was applied
 ftable(is.na(df$X2tdUrea), df$NoFertilizerAppln)
 
 df <- df %>%
- mutate(X1appDaysUrea = ifelse(FTDF_Urea == 0, -1, X1appDaysUrea),
+ mutate(X1appDaysUrea = ifelse(FirstTopDressFert_Urea == 0, -1, X1appDaysUrea),
         X2appDaysUrea = ifelse(NoFertilizerAppln < 3, -1, X2appDaysUrea))
 
 df <- df %>%
@@ -103,22 +74,27 @@ df <- df %>%
               by = "ID")
 
 
-## adjust wrong values ##
-df <- df %>%
- mutate(X1appDaysUrea = ifelse(X1appDaysUrea == 332, NA, X1appDaysUrea),
-        SeedlingsPerPit = ifelse(SeedlingsPerPit == 442, NA, SeedlingsPerPit),
-        Harv_hand_rent = ifelse(Harv_hand_rent == 60000, NA, Harv_hand_rent),
-        Harv_date = ifelse(SeedingSowingTransplanting - Harv_date > 0,
-                           Harv_date + 365, Harv_date))
-
 ## new variables ##
 df <- df %>%
- mutate(CropCultPerc = CropCultLand / CultLand,
-        TIrriCost_H_Acre = TransIrriCost / (TransplantingIrrigationHours * Acre))
+ mutate(CropCultPerc = CropCultLand / CultLand)
 
-## adjust variables for area of land under cultivation (Acre) ##
 df <- df %>%
- mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
-        Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
-        BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
-        CropOrgFYM = CropOrgFYM / Acre)
+  rowwise() %>%
+  mutate(NoOrgFerts = sum(c_across(starts_with("OrgFertilizers"))),
+         NoLPMethods = sum(c_across(starts_with("LandPreparationMethod"))),
+         NoNDFactors = sum(c_across(starts_with("NursDetFactor"))),
+         NoTDFactors = sum(c_across(starts_with("TransDetFactor"))),
+         NoCropbFerts = sum(c_across(starts_with("CropbasalFerts"))),
+         NoFTDFerts = sum(c_across(starts_with("FirstTopDressFert"))))
+
+summary(df$StandingWater /
+          as.numeric(difftime(df$Harv_date, df$SeedingSowingTransplanting, units = "days")))
+## adjust variables for area of land under cultivation (Acre) ##
+#df <- df %>%
+# mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
+#        Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
+#        BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
+#        CropOrgFYM = CropOrgFYM / Acre)
+
+## manipulate target variable
+#df <- df %>% mutate(Yield = ifelse(Yield/Acre > 10000, 10000 * Acre, Yield))
