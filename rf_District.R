@@ -4,14 +4,16 @@ library(mlr3pipelines)
 library(dplyr)
 
 #prepare data
-df = df %>% arrange(ID)
-acre = df$Acre
-df_subset <- df %>% select(-CropTillageDate, -RcNursEstDate, -ID,
+df = df %>% mutate(dataType = 0)
+tdf = tdf %>% mutate(dataType = 1)
+df_subset = rbind(df, tdf)
+df_subset <- df_subset %>% select(-CropTillageDate, -RcNursEstDate,
                            -SeedingSowingTransplanting, -Harv_date, -Threshing_date)
+
 
 #prepare task
 task = as_task_regr(df_subset, target = "Yield", id = "Yield Crop")
-#task$set_col_roles("ID", add_to = c("name", "order"), remove_from = "feature")
+task$set_col_roles("ID", add_to = "name", remove_from = "feature")
 
 # define learner
 rf_learner = lrn("regr.ranger", num.trees = 600, mtry = 10, num.threads = 15,
@@ -38,17 +40,21 @@ prep_graph$add_edge(src_id = "imputelearner", dst_id = "addvariables")
 
 # execute prep_graph and split task
 task = prep_graph$train(task)[["addvariables.output"]]
+task_test = task$clone()
+task_test = task_test$filter(which(df_subset$dataType == 1))
+task_train = task$clone()
+task_train = task_train$filter(which(df_subset$dataType == 0))
 
-task_gaya = task$clone()
+task_gaya = task_train$clone()
 task_gaya = task_gaya$filter(which(df_subset$District == "Gaya"))
 
-task_jamui = task$clone()
+task_jamui = task_train$clone()
 task_jamui = task_jamui$filter(which(df_subset$District == "Jamui"))
 
-task_nalanda = task$clone()
+task_nalanda = task_train$clone()
 task_nalanda = task_nalanda$filter(which(df_subset$District == "Nalanda"))
 
-task_vaishali = task$clone()
+task_vaishali = task_train$clone()
 task_vaishali = task_vaishali$filter(which(df_subset$District == "Vaishali"))
 
 # build modelling graph
@@ -111,28 +117,36 @@ results = PredictionRegr$new(
    se = c(result_gaya$se, result_jamui$se, result_nalanda$se, result_vaishali$se))
 results$score(msr("regr.rmse"))
 
-# predicition on test data
-tdf = tdf %>% arrange(ID)
-tdf_subset <- tdf %>% select(-CropTillageDate, -RcNursEstDate, -ID,
-                           -SeedingSowingTransplanting, -Harv_date, -Threshing_date)
-test_task = as_task_regr(tdf_subset, target = "Yield", id = "Yield Crop")
-
+## predicition on test data
 # execute prep_graph and split task
-test_task = prep_graph$train(test_task)[["addvariables.output"]]
-
-ttask_gaya = test_task$clone()
+ttask_gaya = task_test$clone()
 ttask_gaya = ttask_gaya$filter(which(df_subset$District == "Gaya"))
 
-ttask_jamui = test_task$clone()
+ttask_jamui = task_test$clone()
 ttask_jamui = ttask_jamui$filter(which(df_subset$District == "Jamui"))
 
-ttask_nalanda = test_task$clone()
+ttask_nalanda = task_test$clone()
 ttask_nalanda = ttask_nalanda$filter(which(df_subset$District == "Nalanda"))
 
-ttask_vaishali = test_task$clone()
+ttask_vaishali = task_test$clone()
 ttask_vaishali = ttask_vaishali$filter(which(df_subset$District == "Vaishali"))
 
+#acre = tdf %>% filter(District == "Gaya") %>% select(Acre) %>% pull()
+result_gaya_test = rf_gaya$predict_newdata(ttask_gaya$data(), task = task_gaya)
+result_jamui_test = rf_jamui$predict_newdata(ttask_jamui$data(), task = task_jamui)
+result_nalanda_test = rf_nalanda$predict_newdata(ttask_nalanda$data(), task = task_nalanda)
+result_vaishali_test = rf_vaishali$predict_newdata(ttask_vaishali$data(), task = task_vaishali)
 
+results_test = PredictionRegr$new(
+   row_ids = c(ttask_gaya$row_ids, ttask_jamui$row_ids,
+               ttask_nalanda$row_ids, ttask_vaishali$row_ids),
+   truth = c(result_gaya_test$data$truth, result_jamui_test$data$truth,
+             result_nalanda_test$data$truth, result_vaishali_test$data$truth),
+   response = c(result_gaya_test$data$response, result_jamui_test$data$response,
+                result_nalanda_test$data$response, result_vaishali_test$data$response),
+   se = c(result_gaya_test$se, result_jamui_test$se, result_nalanda_test$se, result_vaishali_test$se))
 
-acre = tdf %>% filter(District == "Gaya") %>% select(Acre) %>% pull()
-result_gaya = rf_gaya$predict_newdata(ttask_gaya$data())
+abgabe = data.frame(ID = df_subset[results_test$row_ids, "ID"] %>% pull(),
+                    Yield = round(results_test$data$response, 2))
+
+write.table(abgabe, file = "pred_rf_District.csv", row.names = FALSE, dec = ".", sep = ",")
