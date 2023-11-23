@@ -6,7 +6,7 @@ library(dplyr)
 #prepare data
 df = df %>% arrange(ID)
 acre = df$Acre
-df_subset <- df %>% select(-CropTillageDate, -RcNursEstDate, -Acre, -ID,
+df_subset <- df %>% select(-CropTillageDate, -RcNursEstDate, -ID,
                            -SeedingSowingTransplanting, -Harv_date, -Threshing_date)
 
 #prepare task
@@ -37,7 +37,7 @@ prep_graph$add_edge(src_id = "imputelearner", dst_id = "addvariables")
 
 
 # execute prep_graph and split task
-task = prep_graph$train(task)
+task = prep_graph$train(task)[["addvariables.output"]]
 
 task_gaya = task$clone()
 task_gaya = task_gaya$filter(which(df_subset$District == "Gaya"))
@@ -53,8 +53,8 @@ task_vaishali = task_vaishali$filter(which(df_subset$District == "Vaishali"))
 
 # build modelling graph
 targetinverse = po("targetmutate", "YieldAcre",
-   param_vals = list(trafo = function(x) x / acre,
-   inverter = function(x) list(response = x$response * acre)))
+   param_vals = list(trafo = function(x) x,
+   inverter = function(x) list(response = x$response)))
 
 gr_single_pred = po("subsample", frac = 1, replace = TRUE) %>>%
    rf_learner
@@ -70,6 +70,7 @@ gr_mod$add_edge(src_id = "YieldAcre", dst_id = "nop", src_channel = 1, dst_chann
 gr_mod$add_pipeop(PipeOpTargetInvert$new())
 gr_mod$add_edge(src_id = "nop", dst_id = "targetinvert", src_channel = 1, dst_channel = 1)
 gr_mod$add_edge(src_id = "regravg", dst_id = "targetinvert", src_channel = 1, dst_channel = 2)
+gr_mod$keep_results = TRUE
 
 # model
 rf_bagging = as_learner(gr_mod)
@@ -112,7 +113,7 @@ results$score(msr("regr.rmse"))
 
 # predicition on test data
 tdf = tdf %>% arrange(ID)
-tdf_subset <- tdf %>% select(-CropTillageDate, -RcNursEstDate, -Acre, -ID,
+tdf_subset <- tdf %>% select(-CropTillageDate, -RcNursEstDate, -ID,
                            -SeedingSowingTransplanting, -Harv_date, -Threshing_date)
 test_task = as_task_regr(tdf_subset, target = "Yield", id = "Yield Crop")
 
