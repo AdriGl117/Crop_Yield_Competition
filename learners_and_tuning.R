@@ -4,7 +4,21 @@ library(mlr3tuning)
 library(mlr3hyperband)
 library(paradox)
 library(mlr3fselect)
-data = read.csv("data/Train.csv")
+library(dplyr)
+install.packages("lubridate")
+library(lubridate)
+data = read.csv("data/Train.csv") %>%
+ mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
+                 Harv_date, Threshing_date), as.Date))
+
+data$CropTillageMonth = month(data$CropTillageDate)
+
+data$CropTillageDate = as.factor(difftime(data$CropTillageDate, min(data$CropTillageDate), units = "days"))
+data$RcNursEstDate = as.factor(difftime(data$RcNursEstDate, min(data$RcNursEstDate), units = "days"))
+data$SeedingSowingTransplanting = as.factor(difftime(data$SeedingSowingTransplanting, min(data$SeedingSowingTransplanting), units = "days"))
+data$Harv_date = as.factor(difftime(data$Harv_date, min(data$Harv_date), units = "days"))
+data$Threshing_date = as.factor(difftime(data$Threshing_date, min(data$Threshing_date), units = "days"))
+
 data[] <- lapply(data, function(x) {
  if(is.character(x)) as.factor(x) else x
 })
@@ -37,7 +51,7 @@ learner_rpart = lrn("regr.rpart",
                     cp  = to_tune(0.00001, 0.1))
 
 #Impute
-po_impute = po("imputeoor")
+po_impute = po("imputemean")
 #fencoder 
 fencoder = po("encode", affect_columns = selector_type("factor"))
 
