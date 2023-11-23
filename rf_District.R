@@ -37,7 +37,7 @@ prep_graph$add_edge(src_id = "imputelearner", dst_id = "addvariables")
 
 
 # execute prep_graph and split task
-task = prep_graph$train(task)[["addvariables.output"]]
+task = prep_graph$train(task)
 
 task_gaya = task$clone()
 task_gaya = task_gaya$filter(which(df_subset$District == "Gaya"))
@@ -74,24 +74,25 @@ gr_mod$add_edge(src_id = "regravg", dst_id = "targetinvert", src_channel = 1, ds
 # model
 rf_bagging = as_learner(gr_mod)
 
+rf_gaya = rf_bagging$clone()
 acre = df %>% filter(District == "Gaya") %>% select(Acre) %>% pull()
-rf_bagging$train(task_gaya)
-result_gaya = rf_bagging$predict(task_gaya)
+rf_gaya$train(task_gaya)
+result_gaya = rf_gaya$predict(task_gaya)
 
-rf_bagging$reset()
+rf_jamui = rf_bagging$clone()
 acre = df %>% filter(District == "Jamui") %>% select(Acre) %>% pull()
-rf_bagging$train(task_jamui)
-result_jamui = rf_bagging$predict(task_jamui)
+rf_jamui$train(task_jamui)
+result_jamui = rf_jamui$predict(task_jamui)
 
-rf_bagging$reset()
+rf_nalanda = rf_bagging$clone()
 acre = df %>% filter(District == "Nalanda") %>% select(Acre) %>% pull()
-rf_bagging$train(task_nalanda)
-result_nalanda = rf_bagging$predict(task_nalanda)
+rf_nalanda$train(task_nalanda)
+result_nalanda = rf_nalanda$predict(task_nalanda)
 
-rf_bagging$reset()
+rf_vaishali = rf_bagging$clone()
 acre = df %>% filter(District == "Vaishali") %>% select(Acre) %>% pull()
-rf_bagging$train(task_vaishali)
-result_vaishali = rf_bagging$predict(task_vaishali)
+rf_vaishali$train(task_vaishali)
+result_vaishali = rf_vaishali$predict(task_vaishali)
 
 # scores
 result_gaya$score(msr("regr.rmse"))
@@ -108,3 +109,29 @@ results = PredictionRegr$new(
       result_nalanda$data$response, result_vaishali$data$response),
    se = c(result_gaya$se, result_jamui$se, result_nalanda$se, result_vaishali$se))
 results$score(msr("regr.rmse"))
+
+# predicition on test data
+tdf = tdf %>% arrange(ID)
+tdf_subset <- tdf %>% select(-CropTillageDate, -RcNursEstDate, -Acre, -ID,
+                           -SeedingSowingTransplanting, -Harv_date, -Threshing_date)
+test_task = as_task_regr(tdf_subset, target = "Yield", id = "Yield Crop")
+
+# execute prep_graph and split task
+test_task = prep_graph$train(test_task)[["addvariables.output"]]
+
+ttask_gaya = test_task$clone()
+ttask_gaya = ttask_gaya$filter(which(df_subset$District == "Gaya"))
+
+ttask_jamui = test_task$clone()
+ttask_jamui = ttask_jamui$filter(which(df_subset$District == "Jamui"))
+
+ttask_nalanda = test_task$clone()
+ttask_nalanda = ttask_nalanda$filter(which(df_subset$District == "Nalanda"))
+
+ttask_vaishali = test_task$clone()
+ttask_vaishali = ttask_vaishali$filter(which(df_subset$District == "Vaishali"))
+
+
+
+acre = tdf %>% filter(District == "Gaya") %>% select(Acre) %>% pull()
+result_gaya = rf_gaya$predict_newdata(ttask_gaya$data())

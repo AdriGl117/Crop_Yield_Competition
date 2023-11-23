@@ -10,20 +10,21 @@ var_description <- var_description %>%
 
 ## character columns to factor columns ##
 df <- df %>% mutate(across(c(District, Block, CropEstMethod,
-                             TransplantingIrrigationSource,
-                             TransplantingIrrigationPowerSource,
-                             PCropSolidOrgFertAppMethod, MineralFertAppMethod,
-                             MineralFertAppMethod.1, Harv_method, Threshing_method,
-                             Stubble_use), as.factor))
+    TransplantingIrrigationSource, TransplantingIrrigationPowerSource,
+    PCropSolidOrgFertAppMethod, MineralFertAppMethod, MineralFertAppMethod.1,
+    Harv_method, Threshing_method, Stubble_use), as.factor))
 
 # error in District, one observation in Gurua has as District Jamui instead of Gaya
 ftable(df$District, df$Block)
+df = df %>%
+  rows_update(tibble(ID = df$ID[df$District == "Jamui" & df$Block == "Gurua"],
+                     District = "Gaya"), by = "ID")
 
 ## factor variables to dummy columns ##
 df = df %>%
   fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
     "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
-    "MineralFertAppMethod", "MineralFertAppMethod.1"),
+    "MineralFertAppMethod", "MineralFertAppMethod.1", "Block"),
     remove_selected_columns = TRUE)
 
 ## character columns to dummy columns ##
@@ -64,14 +65,13 @@ df <- df %>%
                      X2tdUrea = 0, X2appDaysUrea = -1), by = "ID")
 df <- df %>%
   rows_update(tibble(ID = df$ID[is.na(df$X2appDaysUrea)],
-                     X2appDaysUrea = mapply(function(dt, dn, dh, maxd) {
-                       max_pos <- as.numeric(max(dh - dt, dh - dn, na.rm = TRUE))
-                       runif(1, 1, min(max_pos, maxd))
-                     }, dt = df[is.na(df$X2appDaysUrea),]$CropTillageDate,
-                     dn = df[is.na(df$X2appDaysUrea),]$RcNursEstDate,
-                     dh = df[is.na(df$X2appDaysUrea),]$Harv_date,
-                     MoreArgs = list(maxd = max(df$X2appDaysUrea, na.rm = TRUE)))),
-              by = "ID")
+      X2appDaysUrea = mapply(function(dt, dn, dh, maxd) {
+        max_pos <- as.numeric(max(dh - dt, dh - dn, na.rm = TRUE))
+        runif(1, 1, min(max_pos, maxd))
+      }, dt = df[is.na(df$X2appDaysUrea),]$CropTillageDate,
+      dn = df[is.na(df$X2appDaysUrea),]$RcNursEstDate,
+      dh = df[is.na(df$X2appDaysUrea),]$Harv_date,
+      MoreArgs = list(maxd = max(df$X2appDaysUrea, na.rm = TRUE)))), by = "ID")
 
 
 ## new variables ##
