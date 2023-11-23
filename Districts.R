@@ -14,10 +14,10 @@ data_Jamui = data %>% filter(District == "Jamui")
 data_Nalanda = data %>% filter(District == "Nalanda")
 data_Vaishali = data %>% filter(District == "Vaishali")
 
-task_Gaya = as_task_regr(data_Gaya, target = "Yield", id = "task_Gaya")
-task_Jamui = as_task_regr(data_Jamui, target = "Yield", id = "task_Jamui")
-task_Nalanda = as_task_regr(data_Nalanda, target = "Yield", id = "task_Nalanda")
-task_Vaishali = as_task_regr(data_Vaishali, target = "Yield", id = "task_Vaishali")
+task_Gaya = as_task_regr(data_Gaya, target = "Yield", id = "task_Gaya", row.names = "ID")
+task_Jamui = as_task_regr(data_Jamui, target = "Yield", id = "task_Jamui", row.names = "ID")
+task_Nalanda = as_task_regr(data_Nalanda, target = "Yield", id = "task_Nalanda", row.names = "ID")
+task_Vaishali = as_task_regr(data_Vaishali, target = "Yield", id = "task_Vaishali", row.names = "ID")
 
 tsks = c(task_Gaya, task_Jamui, task_Nalanda, task_Vaishali)
 
@@ -31,9 +31,9 @@ learner = lrn("regr.ranger",
 
 learner = as_learner(po_hist %>>% learner)
 
-#g_ppl = ppl("targettrafo", graph = learner_hist)
-#g_ppl$param_set$values$targetmutate.trafo = function(x) log(x)
-#g_ppl$param_set$values$targetmutate.inverter = function(x) list(response = exp(x$response))
+g_ppl = ppl("targettrafo", graph = learner_hist)
+g_ppl$param_set$values$targetmutate.trafo = function(x) log(x)
+g_ppl$param_set$values$targetmutate.inverter = function(x) list(response = exp(x$response))
 
 lrns = c(learner)
 

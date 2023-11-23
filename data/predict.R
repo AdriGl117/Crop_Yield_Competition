@@ -1,4 +1,5 @@
 source("get_data.R")
+library(ROSE)
 
 data = get_data(src = "data/Train.csv")
 
@@ -6,7 +7,11 @@ data_Gaya = data %>% filter(District == "Gaya")
 data_Jamui = data %>% filter(District == "Jamui")
 data_Nalanda = data %>% filter(District == "Nalanda")
 data_Vaishali = data %>% filter(District == "Vaishali")
-data_Jamui = data_Jamui %>% mutate(Yield = ifelse(Yield/Acre > 10000, Acre * 10000, Yield))
+
+data_Jamui = data_Jamui%>% mutate(Outlier = as.factor(ifelse(Yield > 2000, 1, 0)))
+data_Jamui <- ovun.sample(Outlier ~ ., data = data_Jamui, 
+                     method = "over")$data
+data_Jamui = data_Jamui %>% select(-Outlier)
 
 task_Gaya = as_task_regr(data_Gaya, target = "Yield", id = "task_Gaya")
 task_Jamui = as_task_regr(data_Jamui, target = "Yield", id = "task_Jamui")
