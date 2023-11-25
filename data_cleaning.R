@@ -3,10 +3,6 @@ library(dplyr)
 df <- read.csv("data/Train.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
                  Harv_date, Threshing_date), as.Date))
-var_description <- read.csv("./data/VariableDescription.csv")
-var_description <- var_description %>%
- mutate(class = vapply(df[, 2:44], class, FUN.VALUE = character(1)),
-        NAs = vapply(df[, 2:44], function(x) {sum(is.na(x))}, FUN.VALUE = integer(1)))
 
 ## character columns to factor columns ##
 df <- df %>% mutate(across(c(District, Block, CropEstMethod,

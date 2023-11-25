@@ -4,19 +4,19 @@ library(mlr3pipelines)
 library(dplyr)
 
 #prepare data
-df = df %>% mutate(dataType = 0)
-tdf = tdf %>% mutate(dataType = 1)
+df = df %>% mutate(dataType = 0,
+                   ob_weight = ifelse(Yield/Acre > 8000 || Yield/Acre < 100, 2, 1))
+tdf = tdf %>% mutate(dataType = 1, ob_weight = 1)
 df_subset = rbind(df, tdf)
-df_subset <- df_subset %>% select(-CropTillageDate, -RcNursEstDate,
-                           -SeedingSowingTransplanting, -Harv_date, -Threshing_date)
-
+df_subset <- df_subset %>% select(-ob_weight)
 
 #prepare task
 task = as_task_regr(df_subset, target = "Yield", id = "Yield Crop")
 task$set_col_roles("ID", add_to = "name", remove_from = "feature")
+#task$set_col_roles("ob_weight", add_to = "weight", remove_from = "feature")
 
 # define learner
-rf_learner = lrn("regr.ranger", num.trees = 600, mtry = 10, num.threads = 15,
+rf_learner = lrn("regr.ranger", num.trees = 600, mtry = 20, num.threads = 15,
    respect.unordered.factors = "partition")
 
 # pipelines for prep_graph
@@ -47,15 +47,20 @@ task_train = task_train$filter(which(df_subset$dataType == 0))
 
 task_gaya = task_train$clone()
 task_gaya = task_gaya$filter(which(df_subset$District == "Gaya"))
+task_gaya$set_col_roles("Block_Gurua", add_to = "stratum")
 
 task_jamui = task_train$clone()
 task_jamui = task_jamui$filter(which(df_subset$District == "Jamui"))
+task_jamui$set_col_roles("Block_Jamui", add_to = "stratum")
 
 task_nalanda = task_train$clone()
 task_nalanda = task_nalanda$filter(which(df_subset$District == "Nalanda"))
+task_nalanda$set_col_roles("Block_Rajgir", add_to = "stratum")
 
 task_vaishali = task_train$clone()
 task_vaishali = task_vaishali$filter(which(df_subset$District == "Vaishali"))
+task_vaishali$set_col_roles("Block_Garoul", add_to = "stratum")
+task_vaishali$set_col_roles("Block_Mahua", add_to = "stratum")
 
 # build modelling graph
 targetinverse = po("targetmutate", "YieldAcre",
@@ -117,7 +122,9 @@ results = PredictionRegr$new(
    se = c(result_gaya$se, result_jamui$se, result_nalanda$se, result_vaishali$se))
 results$score(msr("regr.rmse"))
 
-## predicition on test data
+
+
+#### predicition on test data ####
 # execute prep_graph and split task
 ttask_gaya = task_test$clone()
 ttask_gaya = ttask_gaya$filter(which(df_subset$District == "Gaya"))
