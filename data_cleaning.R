@@ -33,11 +33,14 @@ df = df %>%
 #df <- df %>% mutate(Yield_Acre = Yield / Acre)
 
 ## adjust wrong values ##
+# set outlier values to NA except if there is an obvious way to correct them 
 df <- df %>%
   mutate(X1appDaysUrea = ifelse(X1appDaysUrea == 332, NA, X1appDaysUrea),
          SeedlingsPerPit = ifelse(SeedlingsPerPit == 442, NA, SeedlingsPerPit),
          Harv_hand_rent = ifelse(Harv_hand_rent == 60000, NA, Harv_hand_rent),
-         Harv_date = as.Date(ifelse(SeedingSowingTransplanting - Harv_date > 0,
+         Ganaura = ifelse(Ganaura / Acre > 500, NA, Ganaura),
+         CropOrgFYM = ifelse(CropOrgFYM / Acre > 500, NA, CropOrgFYM),
+         Harv_date = as.Date(ifelse(format(df$Harv_date, "%Y") == "2001",
                                     Harv_date + 365, Harv_date), origin = "1970-01-01"))
 
 
@@ -69,6 +72,9 @@ df <- df %>%
       dh = df[is.na(df$X2appDaysUrea),]$Harv_date,
       MoreArgs = list(maxd = max(df$X2appDaysUrea, na.rm = TRUE)))), by = "ID")
 
+df = df %>%
+  rows_update(tibble(ID = "ID_YTZN9FE7PQUY",
+      Harv_date = df$RcNursEstDate[[3134]] + runif(1, 95, 151)), by = "ID")
 
 ## new variables ##
 df <- df %>%

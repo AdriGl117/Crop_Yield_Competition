@@ -197,6 +197,7 @@ boxplot(df$Yield / df$Acre)
 plot(hist(df$Yield / df$Acre))
 
 #### Date variables ####
+ftable(df$NursDetFactor, is.na(df$RcNursEstDate))
 table(df$RcNursEstDate - df$CropTillageDate)
 table(df$RcNursEstDate - df$CropTillageDate < 0)
 table(df$RcNursEstDate - df$SeedingSowingTransplanting < 0)
