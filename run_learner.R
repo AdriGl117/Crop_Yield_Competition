@@ -9,6 +9,11 @@ data[] <- lapply(data, function(x) {
  if(is.character(x)) as.factor(x) else x
 })
 
+data = data %>% mutate(Outlier = as.factor(ifelse(Yield > 4000, 1, 0)))
+data <- ovun.sample(Outlier ~ ., data = data, 
+                          method = "over")$data
+data = data %>% select(-Outlier)
+
 task = as_task_regr(data, target = "Yield", id = "task")
 
 #Replace outliers with NA
@@ -45,7 +50,7 @@ lrns = c(learner_hist, learner_mean, learner_median, g_ppl)
 resampling = rsmp("cv", folds = 5)
 
 #Define the Benchmark Grid
-d = benchmark_grid(task = tsks, learner = lrns, resampling = resampling)
+d = benchmark_grid(task = task, learner = lrns, resampling = resampling)
 #Run the Benchmark
 bmr = benchmark(design = d)
 rmse = bmr$aggregate(msr("regr.rmse"))

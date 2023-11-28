@@ -8,7 +8,7 @@ data_Jamui = data %>% filter(District == "Jamui")
 data_Nalanda = data %>% filter(District == "Nalanda")
 data_Vaishali = data %>% filter(District == "Vaishali")
 
-data_Jamui = data_Jamui%>% mutate(Outlier = as.factor(ifelse(Yield > 2000, 1, 0)))
+data_Jamui = data_Jamui%>% mutate(Outlier = as.factor(ifelse(Yield > 4000, 1, 0)))
 data_Jamui <- ovun.sample(Outlier ~ ., data = data_Jamui, 
                      method = "over")$data
 data_Jamui = data_Jamui %>% select(-Outlier)

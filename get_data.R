@@ -1,11 +1,15 @@
-get_data = function(src){
+get_df = function(src){
  library(mlr3verse)
  library(dplyr)
  library(lubridate)
  
- df <- read.csv(src) %>%
+ df <- read.csv("df/Train.csv") %>%
   mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
                   Harv_date, Threshing_date), as.Date))
+ #var_description <- read.csv("./df/VariableDescription.csv")
+ #var_description <- var_description %>%
+ # mutate(class = vapply(df[, 2:44], class, FUN.VALUE = character(1)),
+ #        NAs = vapply(df[, 2:44], function(x) {sum(is.na(x))}, FUN.VALUE = integer(1)))
  
  ## character columns to factor columns ##
  df <- df %>% mutate(across(c(District, Block, CropEstMethod,
@@ -69,6 +73,9 @@ get_data = function(src){
   MoreArgs = list(methods_vec = unique(unlist(strsplit(FirstTopDressFert, " "))))) %>%
    t() %>% as_tibble())
  
+ ## create target variable ##
+ df <- df %>% mutate(Yield_Acre = Yield / Acre)
+ 
  ## replace NAs##
  df <- df %>%
   mutate(Ganaura = ifelse(OF_Ganaura == 0, 0, Ganaura),
@@ -102,55 +109,52 @@ get_data = function(src){
          BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
          CropOrgFYM = CropOrgFYM / Acre)
  
- data = df
 
- data$CropTillage_Month = month(data$CropTillageDate)
- data$RcNursEst_Month = month(data$RcNursEstDate)
- data$SeedingSowingTransplanting_Month = month(data$SeedingSowingTransplanting)
- data$Harv_Month = month(data$Harv_date)
- data$Threshing_Month = month(data$Threshing_date)
+
+ df$CropTillage_Month = month(df$CropTillageDate)
+ df$RcNursEst_Month = month(df$RcNursEstDate)
+ df$SeedingSowingTransplanting_Month = month(df$SeedingSowingTransplanting)
+ df$Harv_Month = month(df$Harv_date)
+ df$Threshing_Month = month(df$Threshing_date)
  
- data$CropTillage_Quarter = quarter(data$CropTillageDate)
- data$RcNursEst_Quarter = quarter(data$RcNursEstDate)
- data$SeedingSowingTransplanting_Quarter = quarter(data$SeedingSowingTransplanting)
- data$Harv_Quarter = quarter(data$Harv_date)
- data$Threshing_Quarter = quarter(data$Threshing_date)
+ df$CropTillage_Quarter = quarter(df$CropTillageDate)
+ df$RcNursEst_Quarter = quarter(df$RcNursEstDate)
+ df$SeedingSowingTransplanting_Quarter = quarter(df$SeedingSowingTransplanting)
+ df$Harv_Quarter = quarter(df$Harv_date)
+ df$Threshing_Quarter = quarter(df$Threshing_date)
  
- data$CropTillage_Month_sin = sin(2 * pi * data$CropTillage_Month / 12)
- data$CropTillage_Month_cos = cos(2 * pi * data$CropTillage_Month / 12)
- data$RcNursEst_Month_sin = sin(2 * pi * data$RcNursEst_Month / 12)
- data$RcNursEst_Month_cos = cos(2 * pi * data$RcNursEst_Month / 12)
- data$SeedingSowingTransplanting_Month_sin = sin(2 * pi * data$SeedingSowingTransplanting_Month / 12)
- data$SeedingSowingTransplanting_Month_cos = cos(2 * pi * data$SeedingSowingTransplanting_Month / 12)
- data$Harv_Month_sin = sin(2 * pi * data$Harv_Month / 12)
- data$Harv_Month_cos = cos(2 * pi * data$Harv_Month / 12)
- data$Threshing_Month_sin = sin(2 * pi * data$Threshing_Month / 12)
- data$Threshing_Month_cos = cos(2 * pi * data$Threshing_Month / 12)
+ df$CropTillage_Month_sin = sin(2 * pi * df$CropTillage_Month / 12)
+ df$CropTillage_Month_cos = cos(2 * pi * df$CropTillage_Month / 12)
+ df$RcNursEst_Month_sin = sin(2 * pi * df$RcNursEst_Month / 12)
+ df$RcNursEst_Month_cos = cos(2 * pi * df$RcNursEst_Month / 12)
+ df$SeedingSowingTransplanting_Month_sin = sin(2 * pi * df$SeedingSowingTransplanting_Month / 12)
+ df$SeedingSowingTransplanting_Month_cos = cos(2 * pi * df$SeedingSowingTransplanting_Month / 12)
+ df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
+ df$Harv_Month_cos = cos(2 * pi * df$Harv_Month / 12)
+ df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
+ df$Threshing_Month_cos = cos(2 * pi * df$Threshing_Month / 12)
  
- data$DiffCropRC = as.numeric(difftime(data$CropTillageDate, data$RcNursEstDate, units = "days"))
- data$DiffCropSeed = as.numeric(difftime(data$CropTillageDate, data$SeedingSowingTransplanting, units = "days"))
- data$DiffCropHarv = as.numeric(difftime(data$CropTillageDate, data$Harv_date, units = "days"))
- data$DiffCropThresing = as.numeric(difftime(data$CropTillageDate, data$Threshing_date, units = "days"))
+ df$DiffCropRC = as.numeric(difftime(df$CropTillageDate, df$RcNursEstDate, units = "days"))
+ df$DiffCropSeed = as.numeric(difftime(df$CropTillageDate, df$SeedingSowingTransplanting, units = "days"))
+ df$DiffCropHarv = as.numeric(difftime(df$CropTillageDate, df$Harv_date, units = "days"))
+ df$DiffCropThresing = as.numeric(difftime(df$CropTillageDate, df$Threshing_date, units = "days"))
  
- data$DiffRCSeed = as.numeric(difftime(data$RcNursEstDate, data$SeedingSowingTransplanting, units = "days"))
- data$DiffRCHarv = as.numeric(difftime(data$RcNursEstDate, data$Harv_date, units = "days"))
- data$DiffRCThresing = as.numeric(difftime(data$RcNursEstDate, data$Threshing_date, units = "days"))
+ df$DiffRCSeed = as.numeric(difftime(df$RcNursEstDate, df$SeedingSowingTransplanting, units = "days"))
+ df$DiffRCHarv = as.numeric(difftime(df$RcNursEstDate, df$Harv_date, units = "days"))
+ df$DiffRCThresing = as.numeric(difftime(df$RcNursEstDate, df$Threshing_date, units = "days"))
  
- data$DiffSeedHarv = as.numeric(difftime(data$SeedingSowingTransplanting, data$Harv_date, units = "days"))
- data$DiffSeedThresing = as.numeric(difftime(data$SeedingSowingTransplanting, data$Threshing_date, units = "days"))
+ df$DiffSeedHarv = as.numeric(difftime(df$SeedingSowingTransplanting, df$Harv_date, units = "days"))
+ df$DiffSeedThresing = as.numeric(difftime(df$SeedingSowingTransplanting, df$Threshing_date, units = "days"))
  
- data$DiffHarvThresing = as.numeric(difftime(data$Harv_date, data$Threshing_date, units = "days"))
+ df$DiffHarvThresing = as.numeric(difftime(df$Harv_date, df$Threshing_date, units = "days"))
  
- data$CropTillageDate = as.numeric(difftime(data$CropTillageDate, min(data$CropTillageDate), units = "days"))
- data$RcNursEstDate = as.numeric(difftime(data$RcNursEstDate, min(data$RcNursEstDate, na.rm = TRUE), units = "days"))
- data$SeedingSowingTransplanting = as.numeric(difftime(data$SeedingSowingTransplanting, min(data$SeedingSowingTransplanting), units = "days"))
- data$Harv_date = as.numeric(difftime(data$Harv_date, min(data$Harv_date), units = "days"))
- data$Threshing_date = as.numeric(difftime(data$Threshing_date, min(data$Threshing_date), units = "days"))
+ df$CropTillageDate = as.numeric(difftime(df$CropTillageDate, min(df$CropTillageDate), units = "days"))
+ df$RcNursEstDate = as.numeric(difftime(df$RcNursEstDate, min(df$RcNursEstDate, na.rm = TRUE), units = "days"))
+ df$SeedingSowingTransplanting = as.numeric(difftime(df$SeedingSowingTransplanting, min(df$SeedingSowingTransplanting), units = "days"))
+ df$Harv_date = as.numeric(difftime(df$Harv_date, min(df$Harv_date), units = "days"))
+ df$Threshing_date = as.numeric(difftime(df$Threshing_date, min(df$Threshing_date), units = "days"))
  
- #data = data %>% mutate(Yield = case_when(Yield > 1000 ~ 1000,
- #                                         Yield <= 1000 ~ Yield))
- 
- return(data)
+ return(df)
 }
 
 # Laden Sie die benötigten Pakete
