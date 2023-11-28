@@ -40,7 +40,7 @@ df <- df %>%
          Harv_hand_rent = ifelse(Harv_hand_rent == 60000, NA, Harv_hand_rent),
          Ganaura = ifelse(Ganaura / Acre > 500, NA, Ganaura),
          CropOrgFYM = ifelse(CropOrgFYM / Acre > 500, NA, CropOrgFYM),
-         Harv_date = as.Date(ifelse(format(df$Harv_date, "%Y") == "2001",
+         Harv_date = as.Date(ifelse(format(df$Harv_date, "%Y") == "2021",
                                     Harv_date + 365, Harv_date), origin = "1970-01-01"))
 
 

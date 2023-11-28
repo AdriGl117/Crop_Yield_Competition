@@ -216,6 +216,8 @@ df %>% rowwise() %>%
         View()
 table(df$Harv_date - df$Threshing_date <= 0)
 
+plot(df$Harv_date[which(df$Yield / df$Acre < 6000)],
+ df$Yield[which(df$Yield / df$Acre < 6000)] / df$Acre[which(df$Yield / df$Acre < 6000)])
 
 View(df[which(df$Yield / df$Acre > 15000),])
 
