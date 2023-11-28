@@ -4,23 +4,13 @@ library(lubridate)
 library(mlr3mbo)
 source("get_data.R")
 
-data = get_data(src = "data/Train.csv")
-data[] <- lapply(data, function(x) {
+df = get_data(src = "data/Train.csv")
+df[] <- lapply(df, function(x) {
  if(is.character(x)) as.factor(x) else x
 })
 
-task = as_task_regr(data, target = "Yield", id = "task")
+task = as_task_regr(df, target = "Yield", id = "task")
 
-#Replace outliers with NA
-Yield <- data %>% select((Yield))
-data <- data %>% select(-Yield)
-data <- data %>% 
- mutate_if(is.numeric, replace_outliers)
-data$Yield <- Yield
-
-task_without_outliers = as_task_regr(data, target = "Yield", id = "without outliers")
-
-tsks = c(task, task_without_outliers)
 
 po_hist = po("imputehist")
 po_mean = po("imputemean")
@@ -45,7 +35,7 @@ lrns = c(learner_hist, learner_mean, learner_median, g_ppl)
 resampling = rsmp("cv", folds = 5)
 
 #Define the Benchmark Grid
-d = benchmark_grid(task = tsks, learner = lrns, resampling = resampling)
+d = benchmark_grid(task = task, learner = lrns, resampling = resampling)
 #Run the Benchmark
 bmr = benchmark(design = d)
 rmse = bmr$aggregate(msr("regr.rmse"))
