@@ -2,6 +2,7 @@ library(mlr3verse)
 library(dplyr)
 library(lubridate)
 library(mlr3mbo)
+library(ROSE)
 source("get_data.R")
 
 df = get_data(src = "data/Train.csv")
@@ -9,8 +10,12 @@ df[] <- lapply(df, function(x) {
  if(is.character(x)) as.factor(x) else x
 })
 
-task = as_task_regr(df, target = "Yield", id = "task")
+df = df %>% mutate(Outlier = ifelse(Yield >= 4000, 1, 0))
+df <- ovun.sample(Outlier ~ ., data = df, 
+                  method = "over")$data
+df = df %>% select(-Outlier)
 
+task = as_task_regr(df, target = "Yield", id = "task")
 
 po_hist = po("imputehist")
 po_mean = po("imputemean")
@@ -41,11 +46,10 @@ bmr = benchmark(design = d)
 rmse = bmr$aggregate(msr("regr.rmse"))
 rmse
 
-
 # run experiments
-rr1 = resample(task = task, learner = g_ppl, resampling = resampling)
+rr1 = resample(task = task, learner = learner_mean, resampling = resampling)
 
 # access results
-rmse2 <- rr1$score(msr("regr.rmse"))[, .(task_id, learner_id, iteration, regr.rmse)]
-rmse2
+rmse_mean <- rr1$score(msr("regr.rmse"))[, .(task_id, learner_id, iteration, regr.rmse)]
+rmse_mean
 mean(rmse$regr.rmse)
