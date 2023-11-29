@@ -1,6 +1,7 @@
 library(mlr3)
 library(mlr3learners)
 library(mlr3pipelines)
+library(mlr3filters)
 library(dplyr)
 
 #prepare data
@@ -17,7 +18,10 @@ task$set_col_roles("ID", add_to = "name", remove_from = "feature")
 
 # define learner
 rf_learner = lrn("regr.ranger", num.trees = 600, mtry = 20, num.threads = 15,
-   respect.unordered.factors = "partition")
+   respect.unordered.factors = "partition", importance = "impurity")
+
+# define filter
+flt_importance = flt("importance", learner = rf_learner)
 
 # pipelines for prep_graph
 targettrans = po("targetmutate", "YieldAcre",
@@ -48,19 +52,27 @@ task_train = task_train$filter(which(df_subset$dataType == 0))
 task_gaya = task_train$clone()
 task_gaya = task_gaya$filter(which(df_subset$District == "Gaya"))
 task_gaya$set_col_roles("Block_Gurua", add_to = "stratum")
+flt_importance$calculate(task_gaya)
+task_gaya$select(names(flt_importance$scores)[1:75])
 
 task_jamui = task_train$clone()
 task_jamui = task_jamui$filter(which(df_subset$District == "Jamui"))
 task_jamui$set_col_roles("Block_Jamui", add_to = "stratum")
+flt_importance$calculate(task_jamui)
+task_jamui$select(names(flt_importance$scores)[1:75])
 
 task_nalanda = task_train$clone()
 task_nalanda = task_nalanda$filter(which(df_subset$District == "Nalanda"))
 task_nalanda$set_col_roles("Block_Rajgir", add_to = "stratum")
+flt_importance$calculate(task_nalanda)
+task_nalanda$select(names(flt_importance$scores)[1:75])
 
 task_vaishali = task_train$clone()
 task_vaishali = task_vaishali$filter(which(df_subset$District == "Vaishali"))
 task_vaishali$set_col_roles("Block_Garoul", add_to = "stratum")
 task_vaishali$set_col_roles("Block_Mahua", add_to = "stratum")
+flt_importance$calculate(task_gaya)
+task_gaya$select(names(flt_importance$scores)[1:75])
 
 # build modelling graph
 targetinverse = po("targetmutate", "YieldAcre",

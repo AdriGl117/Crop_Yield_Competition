@@ -51,7 +51,8 @@ df <- df %>%
         BasalUrea = ifelse(CropbasalFerts_Urea == 0, 0, BasalUrea),
         BasalDAP = ifelse(CropbasalFerts_DAP == 0, 0, BasalDAP),
         X1tdUrea = ifelse(FirstTopDressFert_Urea == 0, 0, X1tdUrea),
-        X2tdUrea = ifelse(NoFertilizerAppln < 3, 0, X2tdUrea))
+        X2tdUrea = ifelse(NoFertilizerAppln < 3, 0, X2tdUrea),
+        StandingWater = ifelse(is.na(StandingWater), 0, StandingWater))
 # no third dose of chemical fertilizer was applied
 ftable(is.na(df$X2tdUrea), df$NoFertilizerAppln)
 
@@ -78,7 +79,9 @@ df = df %>%
 
 ## new variables ##
 df <- df %>%
- mutate(CropCultPerc = CropCultLand / CultLand)
+ mutate(CropCultPerc = CropCultLand / CultLand,
+        StandingWaterPerc = StandingWater / as.numeric(
+          difftime(Harv_date, SeedingSowingTransplanting, units = "days")))
 
 df <- df %>%
   rowwise() %>%
