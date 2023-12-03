@@ -1,4 +1,5 @@
 library(dplyr)
+library(lubridate)
 
 df <- read.csv("data/Train.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
@@ -17,11 +18,11 @@ df = df %>%
                      District = "Gaya"), by = "ID")
 
 ## factor variables to dummy columns ##
-df = df %>%
-  fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
-    "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
-    "MineralFertAppMethod", "MineralFertAppMethod.1", "Block"),
-    remove_selected_columns = TRUE)
+#df = df %>%
+#  fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
+#    "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
+#    "MineralFertAppMethod", "MineralFertAppMethod.1", "Block"),
+#     remove_selected_columns = TRUE)
 
 ## character columns to dummy columns ##
 df = df %>%
@@ -81,7 +82,7 @@ df = df %>%
 df <- df %>%
  mutate(CropCultPerc = CropCultLand / CultLand,
         StandingWaterPerc = StandingWater / as.numeric(
-          difftime(Harv_date, SeedingSowingTransplanting, units = "days")))
+          difftime(Harv_date, SeedingSowingTransplanting, units = "days")) * 100)
 
 df <- df %>%
   rowwise() %>%
@@ -92,14 +93,64 @@ df <- df %>%
          NoCropbFerts = sum(c_across(starts_with("CropbasalFerts"))),
          NoFTDFerts = sum(c_across(starts_with("FirstTopDressFert"))))
 
-summary(df$StandingWater /
-          as.numeric(difftime(df$Harv_date, df$SeedingSowingTransplanting, units = "days")))
 ## adjust variables for area of land under cultivation (Acre) ##
-#df <- df %>%
-# mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
-#        Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
-#        BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
-#        CropOrgFYM = CropOrgFYM / Acre)
+df <- df %>%
+ mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
+        Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
+        BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
+        CropOrgFYM = CropOrgFYM / Acre)
 
 ## manipulate target variable
 #df <- df %>% mutate(Yield = ifelse(Yield/Acre > 10000, 10000 * Acre, Yield))
+
+df$CropTillage_Month = month(df$CropTillageDate)
+df$RcNursEst_Month = month(df$RcNursEstDate)
+df$SeedingSowingTransplanting_Month = month(df$SeedingSowingTransplanting)
+df$Harv_Month = month(df$Harv_date)
+df$Threshing_Month = month(df$Threshing_date)
+
+df$CropTillage_Quarter = quarter(df$CropTillageDate)
+#df$RcNursEst_Quarter = quarter(df$RcNursEstDate)
+#df$SeedingSowingTransplanting_Quarter = quarter(df$SeedingSowingTransplanting)
+df$Harv_Quarter = quarter(df$Harv_date)
+df$Threshing_Quarter = quarter(df$Threshing_date)
+
+df$CropTillage_Month_sin = sin(2 * pi * df$CropTillage_Month / 12)
+df$CropTillage_Month_cos = cos(2 * pi * df$CropTillage_Month / 12)
+df$RcNursEst_Month_sin = sin(2 * pi * df$RcNursEst_Month / 12)
+df$RcNursEst_Month_cos = cos(2 * pi * df$RcNursEst_Month / 12)
+df$SeedingSowingTransplanting_Month_sin = sin(2 * pi * df$SeedingSowingTransplanting_Month / 12)
+df$SeedingSowingTransplanting_Month_cos = cos(2 * pi * df$SeedingSowingTransplanting_Month / 12)
+df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
+df$Harv_Month_cos = cos(2 * pi * df$Harv_Month / 12)
+df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
+df$Threshing_Month_cos = cos(2 * pi * df$Threshing_Month / 12)
+
+#df$DiffCropRC = as.numeric(difftime(df$CropTillageDate, df$RcNursEstDate, units = "days"))
+df$DiffCropSeed = as.numeric(difftime(df$CropTillageDate, df$SeedingSowingTransplanting, units = "days"))
+df$DiffCropHarv = as.numeric(difftime(df$CropTillageDate, df$Harv_date, units = "days"))
+df$DiffCropThresing = as.numeric(difftime(df$CropTillageDate, df$Threshing_date, units = "days"))
+
+df$DiffRCSeed = as.numeric(difftime(df$RcNursEstDate, df$SeedingSowingTransplanting, units = "days"))
+df$DiffRCHarv = as.numeric(difftime(df$RcNursEstDate, df$Harv_date, units = "days"))
+df$DiffRCThresing = as.numeric(difftime(df$RcNursEstDate, df$Threshing_date, units = "days"))
+
+df$DiffSeedHarv = as.numeric(difftime(df$SeedingSowingTransplanting, df$Harv_date, units = "days"))
+df$DiffSeedThresing = as.numeric(difftime(df$SeedingSowingTransplanting, df$Threshing_date, units = "days"))
+
+df$DiffHarvThresing = as.numeric(difftime(df$Harv_date, df$Threshing_date, units = "days"))
+
+df$CropTillageDate = as.numeric(difftime(df$CropTillageDate, as.Date("2022-05-01"), units = "days"))
+df$RcNursEstDate = as.numeric(difftime(df$RcNursEstDate, as.Date("2022-05-01"), units = "days"))
+df$SeedingSowingTransplanting = as.numeric(difftime(df$SeedingSowingTransplanting, as.Date("2022-05-01"), units = "days"))
+df$Harv_date = as.numeric(difftime(df$Harv_date, as.Date("2022-05-01"), units = "days"))
+df$Threshing_date = as.numeric(difftime(df$Threshing_date, as.Date("2022-05-01"), units = "days"))
+
+#df = df %>% mutate(Yield = case_when(Yield > 1000 ~ 1000,
+#                                         Yield <= 1000 ~ Yield))
+#replace NAs in RcNursEstDate
+df = df %>%
+  mutate(RcNursEstDate = ifelse(is.na(RcNursEstDate), -1, RcNursEstDate),
+         DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed),
+         DiffRCHarv = ifelse(is.na(DiffRCHarv), DiffSeedHarv, DiffRCHarv),
+         DiffRCThresing = ifelse(is.na(DiffRCThresing), DiffSeedThresing, DiffRCThresing))
