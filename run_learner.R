@@ -12,8 +12,8 @@ task$set_col_roles("ID", add_to = "name", remove_from = "feature")
 po_hist = po("imputehist")
 
 learner = lrn("regr.catboost",
-              iterations = to_tune(1, 1000),
-              learning_rate = to_tune(0.001, 0.1),
+              iterations = to_tune(500, 1500),
+              learning_rate = to_tune(0.01, 0.1),
               depth = to_tune(1, 10)
 )
 
@@ -28,22 +28,27 @@ learner = as_learner(po_hist %>>% learner)
 # measure = msr("regr.rmse"),
 # term_evals = 20)
 
-#learner = lrn("regr.catboost",
-#              iterations = 965,
-#              learning_rate = 0.08948363,
-#              depth = 6)
+learner = lrn("regr.catboost",
+              iterations = 1241,#965
+              learning_rate = 0.04592393,#0.08948363
+              depth = 9)#6
 
-#learner$train(task)
+learner$train(task)
 
 at = auto_tuner(
  tuner = tnr("mbo"),
  learner = learner,
- resampling = rsmp ("cv", folds = 3),
+ resampling = rsmp ("holdout"),
  measure = msr("regr.rmse"),
  term_evals = 30)
 
+resampling_outer = rsmp("cv", folds = 3)
+rr = resample(task, at, resampling_outer, store_models = TRUE)
+extract_inner_tuning_results(rr)
+rr$score(msr("regr.rmse"))
+
 at$train(task)
-pr = at$predict_newdata(newdata = tdf)
+pr = learner$predict_newdata(newdata = tdf)
 Yield = round(pr$response, digits = 2)
 ID = tdf$ID
 PR = cbind(ID, Yield)
