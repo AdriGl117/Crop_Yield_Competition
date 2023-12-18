@@ -1,5 +1,6 @@
 library(dplyr)
 library(ggplot2)
+library(corrplot)
 
 df <- read.csv("./data/Train.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
@@ -228,3 +229,16 @@ ggplot(df, aes(x = Yield/Acre, group = District)) +
 ftable(df$Block, df$Yield / df$Acre > 10000)
 ftable(df$Block, df$Yield / df$Acre < 50)
 df %>% group_by(Block) %>% summarise(n(), length(unique(Yield/Acre)))
+
+#### show influence of Acre on other variables ####
+corrplot.mixed(cor(df %>% select(Acre, X1tdUrea, X2tdUrea, Harv_hand_rent, BasalDAP,
+                                 BasalUrea, Ganaura, CropOrgFYM), use = "pairwise.complete.ob"),
+        tl.pos = "lt", mar = c(0, 0, 1.5, 0), title = "uncorrected variables")
+
+corrplot.mixed(cor(df %>% mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
+                        Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
+                        BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
+                        CropOrgFYM = CropOrgFYM / Acre) %>%
+                        select(Acre, X1tdUrea, X2tdUrea, Harv_hand_rent, BasalDAP,
+                        BasalUrea, Ganaura, CropOrgFYM), use = "pairwise.complete.ob"),
+               tl.pos = "lt", mar = c(0, 0, 1.5, 0), title = "corrected variables (with Acre)")
