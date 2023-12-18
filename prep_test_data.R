@@ -13,10 +13,11 @@ tdf = tdf %>% mutate(across(c(District, Block, CropEstMethod,
 
 ## factor variables to dummy columns ##
 #tdf = tdf %>%
-# fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
-#           "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
-#                           "MineralFertAppMethod", "MineralFertAppMethod.1", "Block"),
-#                          remove_selected_columns = TRUE)
+#        fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
+#                                  "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
+#                                  "MineralFertAppMethod", "MineralFertAppMethod.1", "Block", "District",
+#                                  "Stubble_use", "Threshing_method", "Harv_method"),
+#                                remove_selected_columns = TRUE)
 
 ## character columns to dummy columns ##
 tdf = tdf %>%

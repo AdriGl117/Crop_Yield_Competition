@@ -21,7 +21,8 @@ df = df %>%
 #df = df %>%
 #  fastDummies::dummy_cols(c("CropEstMethod", "TransplantingIrrigationSource",
 #    "TransplantingIrrigationPowerSource", "PCropSolidOrgFertAppMethod",
-#    "MineralFertAppMethod", "MineralFertAppMethod.1", "Block"),
+#    "MineralFertAppMethod", "MineralFertAppMethod.1", "Block", "District",
+#    "Stubble_use", "Threshing_method", "Harv_method"),
 #     remove_selected_columns = TRUE)
 
 ## character columns to dummy columns ##
@@ -115,28 +116,28 @@ df$CropTillage_Quarter = quarter(df$CropTillageDate)
 df$Harv_Quarter = quarter(df$Harv_date)
 df$Threshing_Quarter = quarter(df$Threshing_date)
 
-df$CropTillage_Month_sin = sin(2 * pi * df$CropTillage_Month / 12)
-df$CropTillage_Month_cos = cos(2 * pi * df$CropTillage_Month / 12)
-df$RcNursEst_Month_sin = sin(2 * pi * df$RcNursEst_Month / 12)
-df$RcNursEst_Month_cos = cos(2 * pi * df$RcNursEst_Month / 12)
-df$SeedingSowingTransplanting_Month_sin = sin(2 * pi * df$SeedingSowingTransplanting_Month / 12)
-df$SeedingSowingTransplanting_Month_cos = cos(2 * pi * df$SeedingSowingTransplanting_Month / 12)
-df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
-df$Harv_Month_cos = cos(2 * pi * df$Harv_Month / 12)
-df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
-df$Threshing_Month_cos = cos(2 * pi * df$Threshing_Month / 12)
+#df$CropTillage_Month_sin = sin(2 * pi * df$CropTillage_Month / 12)
+#df$CropTillage_Month_cos = cos(2 * pi * df$CropTillage_Month / 12)
+#df$RcNursEst_Month_sin = sin(2 * pi * df$RcNursEst_Month / 12)
+#df$RcNursEst_Month_cos = cos(2 * pi * df$RcNursEst_Month / 12)
+#df$SeedingSowingTransplanting_Month_sin = sin(2 * pi * df$SeedingSowingTransplanting_Month / 12)
+#df$SeedingSowingTransplanting_Month_cos = cos(2 * pi * df$SeedingSowingTransplanting_Month / 12)
+#df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
+#df$Harv_Month_cos = cos(2 * pi * df$Harv_Month / 12)
+#df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
+#df$Threshing_Month_cos = cos(2 * pi * df$Threshing_Month / 12)
 
 #df$DiffCropRC = as.numeric(difftime(df$CropTillageDate, df$RcNursEstDate, units = "days"))
 df$DiffCropSeed = as.numeric(difftime(df$CropTillageDate, df$SeedingSowingTransplanting, units = "days"))
-df$DiffCropHarv = as.numeric(difftime(df$CropTillageDate, df$Harv_date, units = "days"))
-df$DiffCropThresing = as.numeric(difftime(df$CropTillageDate, df$Threshing_date, units = "days"))
+#df$DiffCropHarv = as.numeric(difftime(df$CropTillageDate, df$Harv_date, units = "days"))
+#df$DiffCropThresing = as.numeric(difftime(df$CropTillageDate, df$Threshing_date, units = "days"))
 
 df$DiffRCSeed = as.numeric(difftime(df$RcNursEstDate, df$SeedingSowingTransplanting, units = "days"))
-df$DiffRCHarv = as.numeric(difftime(df$RcNursEstDate, df$Harv_date, units = "days"))
-df$DiffRCThresing = as.numeric(difftime(df$RcNursEstDate, df$Threshing_date, units = "days"))
+#df$DiffRCHarv = as.numeric(difftime(df$RcNursEstDate, df$Harv_date, units = "days"))
+#df$DiffRCThresing = as.numeric(difftime(df$RcNursEstDate, df$Threshing_date, units = "days"))
 
 df$DiffSeedHarv = as.numeric(difftime(df$SeedingSowingTransplanting, df$Harv_date, units = "days"))
-df$DiffSeedThresing = as.numeric(difftime(df$SeedingSowingTransplanting, df$Threshing_date, units = "days"))
+#df$DiffSeedThresing = as.numeric(difftime(df$SeedingSowingTransplanting, df$Threshing_date, units = "days"))
 
 df$DiffHarvThresing = as.numeric(difftime(df$Harv_date, df$Threshing_date, units = "days"))
 
@@ -151,6 +152,6 @@ df$Threshing_date = as.numeric(difftime(df$Threshing_date, as.Date("2022-05-01")
 #replace NAs in RcNursEstDate
 df = df %>%
   mutate(RcNursEstDate = ifelse(is.na(RcNursEstDate), -1, RcNursEstDate),
-         DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed),
-         DiffRCHarv = ifelse(is.na(DiffRCHarv), DiffSeedHarv, DiffRCHarv),
-         DiffRCThresing = ifelse(is.na(DiffRCThresing), DiffSeedThresing, DiffRCThresing))
+         DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed))
+         #DiffRCHarv = ifelse(is.na(DiffRCHarv), DiffSeedHarv, DiffRCHarv),
+         #DiffRCThresing = ifelse(is.na(DiffRCThresing), DiffSeedThresing, DiffRCThresing))

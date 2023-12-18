@@ -9,7 +9,7 @@ df = df %>% mutate(dataType = 0,
                    ob_weight = ifelse(Yield/Acre > 8000 || Yield/Acre < 100, 2, 1))
 tdf = tdf %>% mutate(dataType = 1, ob_weight = 1)
 df_subset = rbind(df, tdf)
-df_subset <- df_subset %>% select(-ob_weight)
+df_subset <- df_subset %>% select(-ob_weight, -TransIrriCost)
 
 #prepare task
 task = as_task_regr(df_subset, target = "Yield", id = "Yield Crop")
@@ -17,7 +17,7 @@ task$set_col_roles("ID", add_to = "name", remove_from = "feature")
 #task$set_col_roles("ob_weight", add_to = "weight", remove_from = "feature")
 
 # define learner
-rf_learner = lrn("regr.ranger", num.trees = 600, mtry = 20, num.threads = 15,
+rf_learner = lrn("regr.ranger", num.trees = 600, num.threads = 15, mtry = 20,
    respect.unordered.factors = "partition", importance = "impurity")
 
 # define filter
@@ -51,28 +51,28 @@ task_train = task_train$filter(which(df_subset$dataType == 0))
 
 task_gaya = task_train$clone()
 task_gaya = task_gaya$filter(which(df_subset$District == "Gaya"))
-task_gaya$set_col_roles("Block_Gurua", add_to = "stratum")
+task_gaya$set_col_roles("Block", add_to = "stratum")
 flt_importance$calculate(task_gaya)
-task_gaya$select(names(flt_importance$scores)[1:75])
+task_gaya$select(names(flt_importance$scores)[flt_importance$scores > 0]) # tau = 1e+05
 
 task_jamui = task_train$clone()
 task_jamui = task_jamui$filter(which(df_subset$District == "Jamui"))
-task_jamui$set_col_roles("Block_Jamui", add_to = "stratum")
-flt_importance$calculate(task_jamui)
-task_jamui$select(names(flt_importance$scores)[1:75])
+task_jamui$set_col_roles("Block", add_to = "stratum")
+flt_importance$calculate(task_jamui) # tau = 5e+06
+task_jamui$select(names(flt_importance$scores)[flt_importance$scores > 0])
 
 task_nalanda = task_train$clone()
 task_nalanda = task_nalanda$filter(which(df_subset$District == "Nalanda"))
-task_nalanda$set_col_roles("Block_Rajgir", add_to = "stratum")
-flt_importance$calculate(task_nalanda)
-task_nalanda$select(names(flt_importance$scores)[1:75])
+task_nalanda$set_col_roles("Block", add_to = "stratum")
+flt_importance$calculate(task_nalanda) # tau = 5e+05
+task_nalanda$select(names(flt_importance$scores)[flt_importance$scores > 0])
 
 task_vaishali = task_train$clone()
 task_vaishali = task_vaishali$filter(which(df_subset$District == "Vaishali"))
-task_vaishali$set_col_roles("Block_Garoul", add_to = "stratum")
-task_vaishali$set_col_roles("Block_Mahua", add_to = "stratum")
-flt_importance$calculate(task_gaya)
-task_gaya$select(names(flt_importance$scores)[1:75])
+task_vaishali$set_col_roles("Block", add_to = "stratum")
+#task_vaishali$set_col_roles("Block_Mahua", add_to = "stratum")
+flt_importance$calculate(task_vaishali) # tau = 2e+05
+task_vaishali$select(names(flt_importance$scores)[flt_importance$scores > 0])
 
 # build modelling graph
 targetinverse = po("targetmutate", "YieldAcre",
@@ -104,17 +104,17 @@ rf_gaya$train(task_gaya)
 result_gaya = rf_gaya$predict(task_gaya)
 
 rf_jamui = rf_bagging$clone()
-acre = df %>% filter(District == "Jamui") %>% select(Acre) %>% pull()
+acre = c(acre, df %>% filter(District == "Jamui") %>% select(Acre) %>% pull())
 rf_jamui$train(task_jamui)
 result_jamui = rf_jamui$predict(task_jamui)
 
 rf_nalanda = rf_bagging$clone()
-acre = df %>% filter(District == "Nalanda") %>% select(Acre) %>% pull()
+acre = c(acre, df %>% filter(District == "Nalanda") %>% select(Acre) %>% pull())
 rf_nalanda$train(task_nalanda)
 result_nalanda = rf_nalanda$predict(task_nalanda)
 
 rf_vaishali = rf_bagging$clone()
-acre = df %>% filter(District == "Vaishali") %>% select(Acre) %>% pull()
+acre = c(acre, df %>% filter(District == "Vaishali") %>% select(Acre) %>% pull())
 rf_vaishali$train(task_vaishali)
 result_vaishali = rf_vaishali$predict(task_vaishali)
 
@@ -135,20 +135,23 @@ results = PredictionRegr$new(
 results$score(msr("regr.rmse"))
 
 
-
 #### predicition on test data ####
 # execute prep_graph and split task
 ttask_gaya = task_test$clone()
 ttask_gaya = ttask_gaya$filter(which(df_subset$District == "Gaya"))
+ttask_gaya$select(colnames(task_gaya$data())[-1])
 
 ttask_jamui = task_test$clone()
 ttask_jamui = ttask_jamui$filter(which(df_subset$District == "Jamui"))
+ttask_jamui$select(colnames(task_jamui$data())[-1])
 
 ttask_nalanda = task_test$clone()
 ttask_nalanda = ttask_nalanda$filter(which(df_subset$District == "Nalanda"))
+ttask_nalanda$select(colnames(task_nalanda$data())[-1])
 
 ttask_vaishali = task_test$clone()
 ttask_vaishali = ttask_vaishali$filter(which(df_subset$District == "Vaishali"))
+ttask_vaishali$select(colnames(task_vaishali$data())[-1])
 
 #acre = tdf %>% filter(District == "Gaya") %>% select(Acre) %>% pull()
 result_gaya_test = rf_gaya$predict_newdata(ttask_gaya$data(), task = task_gaya)
@@ -161,8 +164,10 @@ results_test = PredictionRegr$new(
                ttask_nalanda$row_ids, ttask_vaishali$row_ids),
    truth = c(result_gaya_test$data$truth, result_jamui_test$data$truth,
              result_nalanda_test$data$truth, result_vaishali_test$data$truth),
-   response = c(result_gaya_test$data$response, result_jamui_test$data$response,
-                result_nalanda_test$data$response, result_vaishali_test$data$response),
+   response = c(result_gaya_test$data$response,
+                result_jamui_test$data$response,
+                result_nalanda_test$data$response,
+                result_vaishali_test$data$response),
    se = c(result_gaya_test$se, result_jamui_test$se, result_nalanda_test$se, result_vaishali_test$se))
 
 abgabe = data.frame(ID = df_subset[results_test$row_ids, "ID"] %>% pull(),
