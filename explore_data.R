@@ -231,14 +231,21 @@ ftable(df$Block, df$Yield / df$Acre < 50)
 df %>% group_by(Block) %>% summarise(n(), length(unique(Yield/Acre)))
 
 #### show influence of Acre on other variables ####
+jpeg("acre_cor_uncorrected.jpeg", width = 11, height = 10.5, units = "cm",
+     pointsize = 9, quality = 1000, res = 170)
 corrplot.mixed(cor(df %>% select(Acre, X1tdUrea, X2tdUrea, Harv_hand_rent, BasalDAP,
                                  BasalUrea, Ganaura, CropOrgFYM), use = "pairwise.complete.ob"),
-        tl.pos = "lt", mar = c(0, 0, 1.5, 0), title = "uncorrected variables")
+        tl.pos = "lt", mar = c(0, 0, 2, 0), title = "uncorrected variables",
+        tl.col = "black", tl.srt = 45)
+dev.off()
 
+jpeg("acre_cor_corrected.jpeg", width = 400, height = 410)
 corrplot.mixed(cor(df %>% mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
                         Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
                         BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
                         CropOrgFYM = CropOrgFYM / Acre) %>%
                         select(Acre, X1tdUrea, X2tdUrea, Harv_hand_rent, BasalDAP,
                         BasalUrea, Ganaura, CropOrgFYM), use = "pairwise.complete.ob"),
-               tl.pos = "lt", mar = c(0, 0, 1.5, 0), title = "corrected variables (with Acre)")
+               tl.pos = "lt", mar = c(0, 0, 1.5, 0), title = "corrected variables (with Acre)",
+               tl.col = "black", tl.srt = 45)
+dev.off()

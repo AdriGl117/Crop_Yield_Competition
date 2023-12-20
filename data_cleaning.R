@@ -54,7 +54,8 @@ df <- df %>%
         BasalDAP = ifelse(CropbasalFerts_DAP == 0, 0, BasalDAP),
         X1tdUrea = ifelse(FirstTopDressFert_Urea == 0, 0, X1tdUrea),
         X2tdUrea = ifelse(NoFertilizerAppln < 3, 0, X2tdUrea),
-        StandingWater = ifelse(is.na(StandingWater), 0, StandingWater))
+        StandingWater = ifelse(is.na(StandingWater), 0, StandingWater),
+        SeedlingsPerPit = ifelse(is.na(RcNursEstDate), 0, SeedlingsPerPit))
 # no third dose of chemical fertilizer was applied
 ftable(is.na(df$X2tdUrea), df$NoFertilizerAppln)
 
