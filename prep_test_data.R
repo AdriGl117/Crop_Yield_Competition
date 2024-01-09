@@ -81,26 +81,21 @@ tdf = tdf %>%
                Harv_Month = month(Harv_date), Threshing_Month = month(Threshing_date),
                CropTillage_Quarter = quarter(CropTillageDate),
                Harv_Quarter = quarter(Harv_date), Threshing_Quarter = quarter(Threshing_date),
-               CropTillage_Month_sin = sin(2 * pi * CropTillage_Month / 12),
-               CropTillage_Month_cos = cos(2 * pi * CropTillage_Month / 12),
-               RcNursEst_Month_sin = sin(2 * pi * RcNursEst_Month / 12),
-               RcNursEst_Month_cos = cos(2 * pi * RcNursEst_Month / 12),
-               SeedingSowingTransplanting_Month_sin = sin(2 * pi * SeedingSowingTransplanting_Month / 12),
-               SeedingSowingTransplanting_Month_cos = cos(2 * pi * SeedingSowingTransplanting_Month / 12),
+               #CropTillage_Month_sin = sin(2 * pi * CropTillage_Month / 12),
+               #CropTillage_Month_cos = cos(2 * pi * CropTillage_Month / 12),
+               #RcNursEst_Month_sin = sin(2 * pi * RcNursEst_Month / 12),
+               #RcNursEst_Month_cos = cos(2 * pi * RcNursEst_Month / 12),
+               #SeedingSowingTransplanting_Month_sin = sin(2 * pi * SeedingSowingTransplanting_Month / 12),
+               #SeedingSowingTransplanting_Month_cos = cos(2 * pi * SeedingSowingTransplanting_Month / 12),
                Harv_Month_sin = sin(2 * pi * Harv_Month / 12),
-               Harv_Month_cos = cos(2 * pi * Harv_Month / 12),
-               Threshing_Month_sin = sin(2 * pi * Threshing_Month / 12),
-               Threshing_Month_cos = cos(2 * pi * Threshing_Month / 12))
+               #Harv_Month_cos = cos(2 * pi * Harv_Month / 12),
+               #Threshing_Month_cos = cos(2 * pi * Threshing_Month / 12),
+               Threshing_Month_sin = sin(2 * pi * Threshing_Month / 12))
 
 tdf = tdf %>%
         mutate(DiffCropSeed = as.numeric(difftime(CropTillageDate, SeedingSowingTransplanting, units = "days")),
-               DiffCropHarv = as.numeric(difftime(CropTillageDate, Harv_date, units = "days")),
-               DiffCropThresing = as.numeric(difftime(CropTillageDate, Threshing_date, units = "days")),
                DiffRCSeed = as.numeric(difftime(RcNursEstDate, SeedingSowingTransplanting, units = "days")),
-               DiffRCHarv = as.numeric(difftime(RcNursEstDate, Harv_date, units = "days")),
-               DiffRCThresing = as.numeric(difftime(RcNursEstDate, Threshing_date, units = "days")),
                DiffSeedHarv = as.numeric(difftime(SeedingSowingTransplanting, Harv_date, units = "days")),
-               DiffSeedThresing = as.numeric(difftime(SeedingSowingTransplanting, Threshing_date, units = "days")),
                DiffHarvThresing = as.numeric(difftime(Harv_date, Threshing_date, units = "days")))
 
 tdf = tdf %>%
@@ -115,9 +110,7 @@ tdf = tdf %>%
 #replace NAs in RcNursEstDate
 tdf = tdf %>%
         mutate(RcNursEstDate = ifelse(is.na(RcNursEstDate), -1, RcNursEstDate),
-               DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed),
-               DiffRCHarv = ifelse(is.na(DiffRCHarv), DiffSeedHarv, DiffRCHarv),
-               DiffRCThresing = ifelse(is.na(DiffRCThresing), DiffSeedThresing, DiffRCThresing))
+               DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed))
 
 # add missing columns & delete columns which only exist in test data
 zero_mat = matrix(0, 1, sum(!colnames(df) %in% colnames(tdf)))

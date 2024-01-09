@@ -247,3 +247,14 @@ corrplot.mixed(cor(df %>% mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea
                tl.pos = "lt", mar = c(0, 0.5, 1.5, 0), title = "corrected variables (with Acre)",
                tl.col = "black", tl.srt = 45)
 dev.off()
+
+
+lapply(df, function(x) {
+        if(is.numeric(x)) {
+                standa = sd(x/df$Acre, na.rm = TRUE)
+                durchs = mean(x/df$Acre, na.rm = TRUE)
+                sum(durchs + 3* standa < x/df$Acre | durchs - 3*standa > x/df$Acre, na.rm = TRUE)      
+        } else {
+                0
+        }
+        })

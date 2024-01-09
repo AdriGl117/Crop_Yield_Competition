@@ -5,6 +5,7 @@ df <- read.csv("data/Train.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
                  Harv_date, Threshing_date), as.Date))
 
+
 ## character columns to factor columns ##
 df <- df %>% mutate(across(c(District, Block, CropEstMethod,
     TransplantingIrrigationSource, TransplantingIrrigationPowerSource,
@@ -123,23 +124,14 @@ df$Threshing_Quarter = quarter(df$Threshing_date)
 #df$RcNursEst_Month_cos = cos(2 * pi * df$RcNursEst_Month / 12)
 #df$SeedingSowingTransplanting_Month_sin = sin(2 * pi * df$SeedingSowingTransplanting_Month / 12)
 #df$SeedingSowingTransplanting_Month_cos = cos(2 * pi * df$SeedingSowingTransplanting_Month / 12)
-#df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
+df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
 #df$Harv_Month_cos = cos(2 * pi * df$Harv_Month / 12)
-#df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
+df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
 #df$Threshing_Month_cos = cos(2 * pi * df$Threshing_Month / 12)
 
-#df$DiffCropRC = as.numeric(difftime(df$CropTillageDate, df$RcNursEstDate, units = "days"))
 df$DiffCropSeed = as.numeric(difftime(df$CropTillageDate, df$SeedingSowingTransplanting, units = "days"))
-#df$DiffCropHarv = as.numeric(difftime(df$CropTillageDate, df$Harv_date, units = "days"))
-#df$DiffCropThresing = as.numeric(difftime(df$CropTillageDate, df$Threshing_date, units = "days"))
-
 df$DiffRCSeed = as.numeric(difftime(df$RcNursEstDate, df$SeedingSowingTransplanting, units = "days"))
-#df$DiffRCHarv = as.numeric(difftime(df$RcNursEstDate, df$Harv_date, units = "days"))
-#df$DiffRCThresing = as.numeric(difftime(df$RcNursEstDate, df$Threshing_date, units = "days"))
-
 df$DiffSeedHarv = as.numeric(difftime(df$SeedingSowingTransplanting, df$Harv_date, units = "days"))
-#df$DiffSeedThresing = as.numeric(difftime(df$SeedingSowingTransplanting, df$Threshing_date, units = "days"))
-
 df$DiffHarvThresing = as.numeric(difftime(df$Harv_date, df$Threshing_date, units = "days"))
 
 df$CropTillageDate = as.numeric(difftime(df$CropTillageDate, as.Date("2022-05-01"), units = "days"))
@@ -154,5 +146,3 @@ df$Threshing_date = as.numeric(difftime(df$Threshing_date, as.Date("2022-05-01")
 df = df %>%
   mutate(RcNursEstDate = ifelse(is.na(RcNursEstDate), -1, RcNursEstDate),
          DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed))
-         #DiffRCHarv = ifelse(is.na(DiffRCHarv), DiffSeedHarv, DiffRCHarv),
-         #DiffRCThresing = ifelse(is.na(DiffRCThresing), DiffSeedThresing, DiffRCThresing))
