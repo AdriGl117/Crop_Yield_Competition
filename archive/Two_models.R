@@ -1,19 +1,25 @@
-source("get_data.R")
-df = get_data(src = "data/Train.csv")
-df[] <- lapply(df, function(x) {
- if(is.character(x)) as.factor(x) else x
-})
+library(mlr3verse)
+library(dplyr)
+library(lubridate)
+library(mlr3mbo)
+library(mlr3learners.catboost)
 
-df = df %>% mutate(Outlier = ifelse(Yield - 5000*Acre > 500, 1, 0))
+df = df %>% mutate(Outlier = ifelse(Yield/Acre >= 6000, 1, 0))
 df$Outlier = as.factor(df$Outlier)
 df_norm = df %>% filter(Outlier == "0")
 df_norm = df_norm %>% select(-Outlier)
 task_norm = as_task_regr(df_norm, target = "Yield", id = "task")
+task_norm$set_col_roles("ID", add_to = "name", remove_from = "feature")
 
 df_out = df %>% filter(Outlier == "1")
 df_out = df_out %>% select(-Outlier)
 task_out = as_task_regr(df_out, target = "Yield", id = "task")
+task_out$set_col_roles("ID", add_to = "name", remove_from = "feature")
 df = df %>% select(-Yield)
+
+df[] <- lapply(df, function(x) {
+ if(is.character(x)) as.factor(x) else x
+})
 
 task = as_task_classif(df, target = "Outlier", id = "task")
 
@@ -21,7 +27,7 @@ po = po("imputelearner", lrn("regr.rpart"))
 task = po$train(list(task = task))[[1]]
 
 df = task$data()
-df = themis::smotenc(df, var = "Outlier", k = 2, over_ratio = 0.1)
+df = themis::smotenc(df, var = "Outlier", k = 2, over_ratio = 1)
 
 ##Model that predicts the Outlier Variable for the Test Data##
 #df = df %>% select(-Yield)
@@ -36,9 +42,7 @@ learner_Outlier = as_learner(po_hist %>>% learner_Outlier)
 
 learner_Outlier$train(task)
 
-source("get_test_data.R")
-tdf = get_test_data("data/Test.csv")
-tdf$Outlier = as.factor(tdf$Outlier)
+tdf$Outlier = as.factor(0)
 
 predicts = learner_Outlier$predict_newdata(newdata = tdf)
 Outlier = predicts$response
@@ -49,15 +53,15 @@ tdf$Outlier = as.factor(ifelse(is.na(tdf$Outlier) == TRUE, 1, 0))
 
 tdf_norm = tdf %>% filter(Outlier == "0")
 tdf_out = tdf %>% filter(Outlier == "1")
-tdf_out[] <- lapply(tdf_out, function(x) {
- if(is.character(x)) as.factor(x) else x
-})
+#tdf_out[] <- lapply(tdf_out, function(x) {
+# if(is.character(x)) as.factor(x) else x
+#})
 
-learner_norm = lrn("regr.ranger",
-                  mtry = 20,
-                  num.trees = 500,
-                  max.depth = 200
-)
+learner_norm = lrn("regr.catboost",
+                   iterations = 965,
+                   learning_rate = 0.08948363,
+                   depth = 6)
+
 
 learner_norm = as_learner(po_hist %>>% learner_norm)
 
