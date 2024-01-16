@@ -1,7 +1,7 @@
 library(dplyr)
 library(lubridate)
 
-df <- read.csv("data/Train.csv") %>%
+df <- read.csv("data/train_new.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
                  Harv_date, Threshing_date), as.Date))
 
