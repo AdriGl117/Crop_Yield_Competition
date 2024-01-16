@@ -32,11 +32,13 @@ instance = fsi(
  terminator = trm("evals", n_evals = 50)
 )
 
-fselector = fs("rfe")
+fselector = fs("genetic_search")
 
 fselector$optimize(instance)
 
 saveRDS(c(instance$result_feature_set, "ID"), "data/feature_list.RDS")
 
-dt = as.data.table(instance$archive)
+#dt = as.data.table(instance$archive)
+
+#task$select(instance$result_feature_set)
 
