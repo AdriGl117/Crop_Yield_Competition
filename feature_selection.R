@@ -26,7 +26,7 @@ as.data.table(flt_importance)
 # Feature Selection
 instance = fsi(
  task = task,
- learner = as_learner(po("imputehist") %>>% lrn("regr.ranger")),
+ learner = lrn("regr.ranger"),
  resampling = rsmp("cv", folds = 3),
  measures = msr("regr.rmse"),
  terminator = trm("evals", n_evals = 50)
