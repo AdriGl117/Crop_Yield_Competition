@@ -39,7 +39,7 @@ gowerDist = function(obs, data, exclude = "") {
 #' 
 #' @return data.frame with imputed values replacing NAs
 hotDeck = function(data, exclude = "", allcolsNA = TRUE, colsNA_names = "",
-                   sameLevel = list(), excludeReplaceValue = list()) {
+                   sameLevel = list(), sameLevelALL = NULL, excludeReplaceValue = list()) {
   data_copy = data %>% select(!any_of(exclude))
   
   if(allcolsNA) {
@@ -47,26 +47,33 @@ hotDeck = function(data, exclude = "", allcolsNA = TRUE, colsNA_names = "",
     colsNA_names = names(colsNA[colsNA])
   }
   
+  if(!is.null(sameLevelALL)) {
+    sameLevel = lapply(colsNA_names, function(colname) {
+      c(sameLevelALL, sameLevel[[colname]])
+    })
+    names(sameLevel) = colsNA_names
+  }
+  
   for(col in colsNA_names) {
     missV_index = which(is.na(data_copy[[col]]))
     
     replacementVs = vapply(missV_index,
       function(obs_id, dc) {
-        gdist = gowerDist(dc[obs_id, ], dc, col)
+        single_obs = dc[obs_id, ]
+        dc = dc %>% slice(-missV_index[missV_index != obs_id])
+        
         if(col %in% names(sameLevel)) {
-          diffLevel = rep(FALSE, nrow(dc))
-          
           for(i in seq_along(sameLevel[[col]])) {
-            diffLevel = diffLevel |
-              dc[[sameLevel[[col]][[i]]]] != dc[obs_id, sameLevel[[col]][[i]]][[1]]
+            dc = dc %>%
+              filter(.data[[sameLevel[[col]][[i]]]] == single_obs[[sameLevel[[col]][[i]]]])
           }
-          gdist[diffLevel] = 1
         }
         
         if(col %in% names(excludeReplaceValue)) {
-          gdist[dc[[col]] %in% excludeReplaceValue[[col]]] = 1
+          dc = dc %>% filter(.data[[col]] != excludeReplaceValue[[col]])
         }
         
+        gdist = gowerDist(single_obs, dc, col)
         gdist_order = order(gdist)
         dc[[col]][[gdist_order[!gdist_order %in% missV_index][[1]]]]
       }, FUN.VALUE = 1, dc = data_copy)
