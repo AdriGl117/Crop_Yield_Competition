@@ -118,4 +118,4 @@ colnames(zero_mat) = colnames(df)[!colnames(df) %in% colnames(tdf)]
 zero_mat = as_tibble(zero_mat)
 tdf = tdf %>% mutate(zero_mat)
 
-tdf = tdf %>% select(-all_of(colnames(tdf)[!colnames(tdf) %in% colnames(df)]))
+tdf = tdf %>% select(-all_of(colnames(tdf)[!colnames(tdf) %in% readRDS("data/feature_list.RDS")]))
