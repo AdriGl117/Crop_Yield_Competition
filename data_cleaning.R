@@ -46,6 +46,15 @@ df <- df %>%
          Harv_date = as.Date(ifelse(format(df$Harv_date, "%Y") == "2021",
                                     Harv_date + 365, Harv_date), origin = "1970-01-01"))
 
+# most similar to ID_YTZN9FE7PQUY is ID_2898YKTT7ABB according to the gower distance
+# november 22 instead of march 22 seems to be more likely
+df = df %>%
+  rows_update(tibble(ID = "ID_YTZN9FE7PQUY", Harv_date = as.Date("2022-11-04")),
+              by = "ID")
+# alternativ:
+#df = df %>%
+#  rows_update(tibble(ID = "ID_YTZN9FE7PQUY",
+#                     Harv_date = df$RcNursEstDate[[3134]] + runif(1, 95, 151)), by = "ID")
 
 ## replace NAs##
 df <- df %>%
@@ -69,23 +78,20 @@ df <- df %>%
                      X2tdUrea = 0, X2appDaysUrea = -1), by = "ID")
 df <- df %>%
   rows_update(tibble(ID = df$ID[is.na(df$X2appDaysUrea)],
-      X2appDaysUrea = mapply(function(dt, dn, dh, maxd) {
-        max_pos <- as.numeric(max(dh - dt, dh - dn, na.rm = TRUE))
+      X2appDaysUrea = mapply(function(dt, dh, maxd) {
+        max_pos <- as.numeric(dh - dt)
         runif(1, 1, min(max_pos, maxd))
       }, dt = df[is.na(df$X2appDaysUrea),]$CropTillageDate,
-      dn = df[is.na(df$X2appDaysUrea),]$RcNursEstDate,
       dh = df[is.na(df$X2appDaysUrea),]$Harv_date,
       MoreArgs = list(maxd = max(df$X2appDaysUrea, na.rm = TRUE)))), by = "ID")
 
-df = df %>%
-  rows_update(tibble(ID = "ID_YTZN9FE7PQUY",
-      Harv_date = df$RcNursEstDate[[3134]] + runif(1, 95, 151)), by = "ID")
 
 ## new variables ##
 df <- df %>%
- mutate(CropCultPerc = CropCultLand / CultLand,
-        StandingWaterPerc = StandingWater / as.numeric(
-          difftime(Harv_date, SeedingSowingTransplanting, units = "days")) * 100)
+  mutate(CropCultPerc = CropCultLand / CultLand,
+    StandingWaterPerc = StandingWater / as.numeric(
+    difftime(Harv_date, SeedingSowingTransplanting, units = "days")) * 100,
+    PlantingMethod = ifelse(is.na(RcNursEstDate), "sowing", "tranplantingSeedlings"))
 
 df <- df %>%
   rowwise() %>%
@@ -94,7 +100,8 @@ df <- df %>%
          NoNDFactors = sum(c_across(starts_with("NursDetFactor"))),
          NoTDFactors = sum(c_across(starts_with("TransDetFactor"))),
          NoCropbFerts = sum(c_across(starts_with("CropbasalFerts"))),
-         NoFTDFerts = sum(c_across(starts_with("FirstTopDressFert"))))
+         NoFTDFerts = sum(c_across(starts_with("FirstTopDressFert")))) %>%
+  ungroup()
 
 ## adjust variables for area of land under cultivation (Acre) ##
 df <- df %>%
@@ -129,10 +136,10 @@ df$Harv_Month_sin = sin(2 * pi * df$Harv_Month / 12)
 df$Threshing_Month_sin = sin(2 * pi * df$Threshing_Month / 12)
 #df$Threshing_Month_cos = cos(2 * pi * df$Threshing_Month / 12)
 
-df$DiffCropSeed = as.numeric(difftime(df$CropTillageDate, df$SeedingSowingTransplanting, units = "days"))
-df$DiffRCSeed = as.numeric(difftime(df$RcNursEstDate, df$SeedingSowingTransplanting, units = "days"))
-df$DiffSeedHarv = as.numeric(difftime(df$SeedingSowingTransplanting, df$Harv_date, units = "days"))
-df$DiffHarvThresing = as.numeric(difftime(df$Harv_date, df$Threshing_date, units = "days"))
+df$DiffCropSeed = abs(as.numeric(difftime(df$CropTillageDate, df$SeedingSowingTransplanting, units = "days")))
+df$DiffRCSeed = abs(as.numeric(difftime(df$RcNursEstDate, df$SeedingSowingTransplanting, units = "days")))
+df$DiffSeedHarv = abs(as.numeric(difftime(df$SeedingSowingTransplanting, df$Harv_date, units = "days")))
+df$DiffHarvThresing = abs(as.numeric(difftime(df$Harv_date, df$Threshing_date, units = "days")))
 
 df$CropTillageDate = as.numeric(difftime(df$CropTillageDate, as.Date("2022-05-01"), units = "days"))
 df$RcNursEstDate = as.numeric(difftime(df$RcNursEstDate, as.Date("2022-05-01"), units = "days"))
@@ -145,4 +152,5 @@ df$Threshing_date = as.numeric(difftime(df$Threshing_date, as.Date("2022-05-01")
 #replace NAs in RcNursEstDate
 df = df %>%
   mutate(RcNursEstDate = ifelse(is.na(RcNursEstDate), -1, RcNursEstDate),
+         RcNursEst_Month = ifelse(is.na(RcNursEst_Month), 0, RcNursEst_Month),
          DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed))
