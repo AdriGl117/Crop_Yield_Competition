@@ -1,7 +1,7 @@
 library(dplyr)
 library(lubridate)
 
-df <- read.csv("data/Train.csv") %>%
+df <- read.csv("data/train_new.csv") %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
                  Harv_date, Threshing_date), as.Date))
 
@@ -76,14 +76,6 @@ df <- df %>%
 df <- df %>%
   rows_update(tibble(ID = df$ID[is.na(df$X2tdUrea) & df$X1tdUrea == 0 & df$X1appDaysUrea == -1],
                      X2tdUrea = 0, X2appDaysUrea = -1), by = "ID")
-df <- df %>%
-  rows_update(tibble(ID = df$ID[is.na(df$X2appDaysUrea)],
-      X2appDaysUrea = mapply(function(dt, dh, maxd) {
-        max_pos <- as.numeric(dh - dt)
-        runif(1, 1, min(max_pos, maxd))
-      }, dt = df[is.na(df$X2appDaysUrea),]$CropTillageDate,
-      dh = df[is.na(df$X2appDaysUrea),]$Harv_date,
-      MoreArgs = list(maxd = max(df$X2appDaysUrea, na.rm = TRUE)))), by = "ID")
 
 
 ## new variables ##
@@ -91,7 +83,7 @@ df <- df %>%
   mutate(CropCultPerc = CropCultLand / CultLand,
     StandingWaterPerc = StandingWater / as.numeric(
     difftime(Harv_date, SeedingSowingTransplanting, units = "days")) * 100,
-    PlantingMethod = ifelse(is.na(RcNursEstDate), "sowing", "tranplantingSeedlings"))
+    PlantingMethod = as.factor(ifelse(is.na(RcNursEstDate), "sowing", "tranplantingSeedlings")))
 
 df <- df %>%
   rowwise() %>%
@@ -103,15 +95,6 @@ df <- df %>%
          NoFTDFerts = sum(c_across(starts_with("FirstTopDressFert")))) %>%
   ungroup()
 
-## adjust variables for area of land under cultivation (Acre) ##
-df <- df %>%
- mutate(X1tdUrea = X1tdUrea / Acre, X2tdUrea = X2tdUrea / Acre,
-        Harv_hand_rent = Harv_hand_rent / Acre, BasalDAP = BasalDAP / Acre,
-        BasalUrea = BasalUrea / Acre, Ganaura = Ganaura / Acre,
-        CropOrgFYM = CropOrgFYM / Acre)
-
-## manipulate target variable
-#df <- df %>% mutate(Yield = ifelse(Yield/Acre > 10000, 10000 * Acre, Yield))
 
 df$CropTillage_Month = month(df$CropTillageDate)
 df$RcNursEst_Month = month(df$RcNursEstDate)
@@ -154,3 +137,9 @@ df = df %>%
   mutate(RcNursEstDate = ifelse(is.na(RcNursEstDate), -1, RcNursEstDate),
          RcNursEst_Month = ifelse(is.na(RcNursEst_Month), 0, RcNursEst_Month),
          DiffRCSeed = ifelse(is.na(DiffRCSeed), 0, DiffRCSeed))
+
+## deselect columns + transform & adjust variables for area of land under cultivation (Acre) ##
+df = df %>% select(-TransIrriCost, -Harv_Month, -Threshing_Month) %>%
+  mutate(across(any_of(c("X1tdUrea", "X2tdUrea", "Harv_hand_rent", "BasalDAP", "BasalUrea",
+                         "Ganaura", "CropOrgFYM", "Yield")), ~ .x / Acre))
+  
