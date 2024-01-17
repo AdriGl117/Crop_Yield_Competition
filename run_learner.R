@@ -2,21 +2,21 @@ library(mlr3verse)
 library(dplyr)
 library(lubridate)
 library(mlr3mbo)
+library(data.table)
 library(mlr3learners.catboost)
 
-task = as_task_regr(df, target = "Yield", id = "task")
+impute_tech = "impute mean"
+Seed <- 1234
+set.seed(Seed)
+source("imputation.R", skip = 4)
 task$select(readRDS("data/feature_list.RDS"))
 task$set_col_roles("ID", add_to = "name", remove_from = "feature")
-
-po_hist = po("imputehist")
 
 learner = lrn("regr.catboost",
               iterations = to_tune(500, 1500),
               learning_rate = to_tune(0.01, 0.1),
               depth = to_tune(1, 10)
 )
-
-learner = as_learner(po_hist %>>% learner)
 
 #rr = tune_nested(
 # tuner = tnr("mbo"),
@@ -28,9 +28,9 @@ learner = as_learner(po_hist %>>% learner)
 # term_evals = 20)
 
 learner = lrn("regr.catboost",
-              iterations = 1500,#965
-              learning_rate = 0.05,#0.08948363
-              depth = 10)#6
+              iterations = 965,#965
+              learning_rate = 0.08948363,#0.08948363
+              depth = 6)#6
 
 
 
@@ -54,27 +54,23 @@ rr = resample(task, learner, cv)
 
 rmse = rr$aggregate(msr("regr.rmse"))[[1]]
 
-comment = "Same Settings as run 1, but other HP configuration"
+Comment = "Hyperparameter Choosen by Bayesian HPO"
 
-results = rbind(readRDS("data/results.RDS"),cbind(
-                Sys.Date(),
-                paste(task$feature_names, collapse = ", "),
-                learner$id,
-                format_row(as.list(as.data.frame(learner$param_set$values)[1, ])),
-                cv$param_set$values[[1]],
-                rmse,
-                comment
+learner$train(task)
+
+results = rbind(readRDS("data/results.RDS"),data.table(
+                Date = Sys.Date(),
+                Seed = Seed,
+                Learner = learner$id,
+                Hyper_Parameter = list(learner$param_set$values),
+                Features = list(task$feature_names),
+                Imputing = impute_tech,
+                Time = learner$timings[[1]],
+                Resampling_folds = cv$param_set$values[[1]],
+                CV_Score = rmse,
+                Comment = Comment
                 ))
-
-r <- cbind(
- Sys.Date(),
- paste(task$feature_names, collapse = ", "),
- learner$id,
- format_row(as.list(as.data.frame(learner$param_set$values)[1, ])),
- cv$param_set$values[[1]],
- rmse,
- comment
-)
+saveRDS(results, "data/results.RDS")
 
 # Predicitons on test Data
 learner$train(task)
