@@ -1,9 +1,9 @@
 library(mlr3)
 library(mlr3pipelines)
 library(dplyr)
-source("helper_functions.R")
 impute_tech = "hot deck"
 DistrictSplit = TRUE
+source("helper_functions.R")
 
 if(impute_tech == "hot deck") {
   df_copy = hotDeck(df, exclude = c("Yield", "Acre", "ID"),
