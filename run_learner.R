@@ -5,18 +5,21 @@ library(mlr3mbo)
 library(data.table)
 library(mlr3learners.catboost)
 
-impute_tech = "impute mean"
 Seed <- 1234
 set.seed(Seed)
-source("imputation.R", skip = 4)
-task$select(readRDS("data/feature_list.RDS"))
+#impute_tech = "hot deck"
+#DistrictSplit = TRUE
+source("data_cleaning.R")
+source("imputation.R")
+task$select(readRDS("data/feature_list_catboost.RDS"))
 task$set_col_roles("ID", add_to = "name", remove_from = "feature")
 
-learner = lrn("regr.catboost",
-              iterations = to_tune(500, 1500),
-              learning_rate = to_tune(0.01, 0.1),
-              depth = to_tune(1, 10)
-)
+# Nested Tuning
+#learner = lrn("regr.catboost",
+#              iterations = to_tune(500, 1500),
+#              learning_rate = to_tune(0.01, 0.1),
+#              depth = to_tune(1, 10)
+#)
 
 #rr = tune_nested(
 # tuner = tnr("mbo"),
@@ -27,12 +30,7 @@ learner = lrn("regr.catboost",
 # measure = msr("regr.rmse"),
 # term_evals = 20)
 
-learner = lrn("regr.catboost",
-              iterations = 965,#965
-              learning_rate = 0.08948363,#0.08948363
-              depth = 6)#6
-
-
+# Auto Tuner
 
 #at = auto_tuner(
 # tuner = tnr("mbo"),
@@ -48,13 +46,20 @@ learner = lrn("regr.catboost",
 
 # Evaluation Model
 
+learner = lrn("regr.catboost",
+              iterations = 965,
+              learning_rate = 0.08948363,
+              depth = 6)
+
 cv = rsmp("cv", folds = 5)
 
 rr = resample(task, learner, cv)
 
 rmse = rr$aggregate(msr("regr.rmse"))[[1]]
 
-Comment = "Hyperparameter Choosen by Bayesian HPO"
+Comment = "Target is Yield/Acre"
+
+Distict = "All"
 
 learner$train(task)
 
@@ -68,12 +73,13 @@ results = rbind(readRDS("data/results.RDS"),data.table(
                 Time = learner$timings[[1]],
                 Resampling_folds = cv$param_set$values[[1]],
                 CV_Score = rmse,
-                Comment = Comment
+                Comment = Comment,
+                DistrictSplit = DistrictSplit,
+                District = District
                 ))
 saveRDS(results, "data/results.RDS")
 
 # Predicitons on test Data
-learner$train(task)
 pr = learner$predict_newdata(newdata = tdf)
 Yield = round(pr$response, digits = 2)
 ID = tdf$ID
