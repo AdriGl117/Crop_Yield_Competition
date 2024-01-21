@@ -24,7 +24,7 @@ flt_importance$calculate(ttask)
 as.data.table(flt_importance)
 
 # Feature Selection
-instance = fsi(
+instance_ranger = fsi(
  task = task,
  learner = lrn("regr.ranger"),
  resampling = rsmp("cv", folds = 3),
@@ -34,9 +34,24 @@ instance = fsi(
 
 fselector = fs("genetic_search")
 
-fselector$optimize(instance)
+fselector$optimize(instance_ranger)
 
-saveRDS(c(instance$result_feature_set, "ID"), "data/feature_list.RDS")
+saveRDS(c(instance_ranger$result_feature_set, "ID"), "data/feature_list_ranger.RDS")
+
+instance_catboost = fsi(
+ task = task,
+ learner = lrn("regr.catboost"),
+ resampling = rsmp("cv", folds = 3),
+ measures = msr("regr.rmse"),
+ terminator = trm("evals", n_evals = 150)
+)
+
+fselector = fs("genetic_search")
+
+fselector$optimize(instance_catboost)
+
+saveRDS(c(instance_catboost$result_feature_set),#, "ID"), 
+        "data/feature_list_catboost.RDS")
 
 #dt = as.data.table(instance$archive)
 
