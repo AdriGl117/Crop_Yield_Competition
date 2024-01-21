@@ -7,6 +7,9 @@ CV_Score <- rmse
 Comment <- "Hyperparameters optimized by Bayesian Optimization with nested resampling"
 Imputing <- impute_tech
 Time <- learner$timings[[1]]
-results <- data.table::data.table(Date, Seed, Learner, Hyper_Parameter, Features, Imputing, Time, Resampling_folds, CV_Score, Comment)
+DistrictSplit = FALSE
+District = "All"
+
+results <- data.table::data.table(Date, Seed, Learner, Hyper_Parameter, Features, Imputing, Time, Resampling_folds, CV_Score, Comment, DistrictSplit, District)
 
 saveRDS(results, file = "data/results.RDS")
