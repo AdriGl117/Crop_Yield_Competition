@@ -75,7 +75,7 @@ hotDeck = function(data, exclude = "", allcolsNA = TRUE, colsNA_names = "",
         
         gdist = gowerDist(single_obs, dc, col)
         gdist_order = order(gdist)
-        dc[[col]][[gdist_order[!gdist_order %in% missV_index][[1]]]]
+        dc[[col]][[gdist_order[[2]]]]
       }, FUN.VALUE = 1, dc = data_copy)
     
     data[[col]][missV_index] = replacementVs
