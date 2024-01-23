@@ -1,8 +1,10 @@
 library(mlr3)
 library(mlr3pipelines)
 library(dplyr)
-impute_tech = "hot deck"
-DistrictSplit = TRUE
+if(!sourcing) {
+  impute_tech = "hot deck"
+  DistrictSplit = TRUE
+}
 source("helper_functions.R")
 
 if(impute_tech == "hot deck") {

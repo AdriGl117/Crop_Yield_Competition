@@ -7,6 +7,7 @@ library(mlr3learners.catboost)
 
 Seed <- 1234
 set.seed(Seed)
+sourcing = TRUE
 #impute_tech = "hot deck"
 #DistrictSplit = TRUE
 source("data_cleaning.R")
