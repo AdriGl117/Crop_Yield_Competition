@@ -5,15 +5,14 @@ library(mlr3mbo)
 library(data.table)
 library(mlr3learners.catboost)
 
-Seed <- 1234
+Seed <- 1603
 set.seed(Seed)
 sourcing = TRUE
-#impute_tech = "hot deck"
-#DistrictSplit = TRUE
+impute_tech = "hot deck"
+DistrictSplit = TRUE
 source("data_cleaning.R")
 source("imputation.R")
-task$select(readRDS("data/feature_list_catboost.RDS"))
-task$set_col_roles("ID", add_to = "name", remove_from = "feature")
+#task$select(readRDS("data/feature_list_catboost.RDS"))
 
 # Nested Tuning
 #learner = lrn("regr.catboost",
@@ -46,39 +45,57 @@ task$set_col_roles("ID", add_to = "name", remove_from = "feature")
 #rr$score(msr("regr.rmse"))
 
 # Evaluation Model
+if(DistrictSplit) {
+ loop_district_var = c("gaya", "jamui", "nalanda", "vaishali")
+} else {
+ loop_district_var = "All"
+}
 
-learner = lrn("regr.catboost",
-              iterations = 965,
-              learning_rate = 0.08948363,
-              depth = 6)
-
-cv = rsmp("cv", folds = 5)
-
-rr = resample(task, learner, cv)
-
-rmse = rr$aggregate(msr("regr.rmse"))[[1]]
-
-Comment = "Target is Yield/Acre"
-
-Distict = "All"
-
-learner$train(task)
-
-results = rbind(readRDS("data/results.RDS"),data.table(
-                Date = Sys.Date(),
-                Seed = Seed,
-                Learner = learner$id,
-                Hyper_Parameter = list(learner$param_set$values),
-                Features = list(task$feature_names),
-                Imputing = impute_tech,
-                Time = learner$timings[[1]],
-                Resampling_folds = cv$param_set$values[[1]],
-                CV_Score = rmse,
-                Comment = Comment,
-                DistrictSplit = DistrictSplit,
-                District = District
-                ))
-saveRDS(results, "data/results.RDS")
+for(District in loop_district_var) {
+ set.seed(Seed)
+ learner = lrn("regr.catboost",
+               iterations = 320,
+               learning_rate = 0.08948363,
+               depth = 10)
+ 
+ #learner = lrn("regr.ranger", num.trees = 750, num.threads = 6)
+ 
+ cv = rsmp("cv", folds = 5)
+ 
+ rr = resample(get(paste0("task_", District)), learner, cv)
+ 
+ rmse = rr$aggregate(msr("regr.rmse"))[[1]]
+ 
+ Comment = "Target is Yield/Acre"
+ 
+ learner$train(get(paste0("task_", District)))
+ 
+ results = rbind(readRDS("data/results.RDS"),data.table(
+  Date = Sys.Date(),
+  Seed = Seed,
+  Learner = learner$id,
+  Hyper_Parameter = list(learner$param_set$values),
+  Features = list(get(paste0("task_", District))[["feature_names"]]),
+  Imputing = impute_tech,
+  Time = learner$timings[[1]],
+  Resampling_folds = cv$param_set$values[[1]],
+  CV_Score = rmse,
+  Comment = Comment,
+  DistrictSplit = DistrictSplit,
+  District = District,
+  Combined_Score = rmse
+ ))
+ saveRDS(results, "data/results.RDS")
+}
+if(DistrictSplit) {
+  # get the overall rmse for district models
+  first_obs = nrow(results) - 3
+  results$Combined_Score[first_obs + 0:3] = sqrt((results[first_obs, ]$CV_Score^2 * task_gaya$nrow +
+    results[first_obs + 1, ]$CV_Score^2 * task_jamui$nrow + results[first_obs + 2, ]$CV_Score^2 *
+    task_nalanda$nrow + results[first_obs + 3, ]$CV_Score^2 * task_vaishali$nrow)/3096)
+  
+  saveRDS(results, "data/results.RDS")
+}
 
 # Predicitons on test Data
 pr = learner$predict_newdata(newdata = tdf)
