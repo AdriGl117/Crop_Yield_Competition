@@ -2,9 +2,6 @@ library(mlr3fselect)
 library(mlr3filters)
 library(genalg)
 
-task = as_task_regr(df, target = "Yield", id = "task")
-task$set_col_roles("ID", add_to = "name", remove_from = "feature")
-
 # Information Gain
 flt_gain = flt("information_gain")
 flt_gain$calculate(task)
@@ -24,36 +21,39 @@ flt_importance$calculate(ttask)
 as.data.table(flt_importance)
 
 # Feature Selection
-instance_ranger = fsi(
- task = task,
+instance_ranger = fselect(
+ fselector = fs("sequential"),
+ task = task_All,
  learner = lrn("regr.ranger"),
  resampling = rsmp("cv", folds = 3),
- measures = msr("regr.rmse"),
- terminator = trm("evals", n_evals = 50)
+ measures = msr("regr.rmse")#,
+ #terminator = trm("evals", n_evals = 50)
 )
 
-fselector = fs("genetic_search")
+fselector = fs("sequential")
 
 fselector$optimize(instance_ranger)
 
-saveRDS(c(instance_ranger$result_feature_set, "ID"), "data/feature_list_ranger.RDS")
+saveRDS(c(instance_ranger$result_feature_set),
+        "features/feature_list_ranger.RDS")
 
-instance_catboost = fsi(
- task = task,
- learner = lrn("regr.catboost"),
+instance_catboost = fselect(
+ fselector = fs("sequential", strategy = "sbs"), #sfs forward, sbs backwards
+ task = task_vaishali,
+ learner = lrn("regr.catboost",
+               thread_count = 6),
  resampling = rsmp("cv", folds = 3),
- measures = msr("regr.rmse"),
- terminator = trm("evals", n_evals = 150)
+ measures = msr("regr.rmse")#,
+ #terminator = trm("evals", n_evals = 1000)
 )
 
-fselector = fs("genetic_search")
+#fselector = fs("genetic_search")#genetic_search
 
-fselector$optimize(instance_catboost)
+#fselector$optimize(instance_catboost)
 
 saveRDS(c(instance_catboost$result_feature_set),#, "ID"), 
-        "data/feature_list_catboost.RDS")
+        "features/feature_list_catboost_vaishali.RDS")
 
 #dt = as.data.table(instance$archive)
 
 #task$select(instance$result_feature_set)
-
