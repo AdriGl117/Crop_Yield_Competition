@@ -143,3 +143,10 @@ df = df %>% select(-TransIrriCost, -Harv_Month, -Threshing_Month) %>%
   mutate(across(any_of(c("X1tdUrea", "X2tdUrea", "Harv_hand_rent", "BasalDAP", "BasalUrea",
                          "Ganaura", "CropOrgFYM", "Yield")), ~ .x / Acre))
   
+## select randomly 3 of the duplicated Vaishali observations (all with Yield/Acre == 44)
+dupIDs = df %>% filter(District == "Vaishali" & Yield < 45) %>% pull(ID)
+set.seed(94)
+dupIDs = sample(dupIDs, 91)
+df = df %>% filter(!ID %in% dupIDs)
+
+rm(dupIDs)
