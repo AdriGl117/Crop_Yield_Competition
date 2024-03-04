@@ -3,11 +3,15 @@ library(ggplot2)
 library(ggpubr)
 
 # Select the District: All, gaya, nalanda, jamui or vaishali
-District = "gaya"
+District = "All"
 
-Learner = "ranger"
+Learner = "catboost"
 
 task = get(paste0("task_", District))
+
+data = task$data() %>% group_by(Yield) %>% filter(n() <= 3) %>% ungroup()
+
+task = as_task_regr(data, target = "Yield", id = "Yield Crop")
 
 split = partition(task, ratio = 0.67)
 
@@ -33,7 +37,7 @@ plot(importance) +
  theme(plot.title = element_text(hjust = 0.5))
 
 # read features
-# features = importance$results[1:4, 1]
+#features = subset(importance$results, importance > 1)[,1]
 if(DistrictSplit){
  features = readRDS(paste0("features/feature_list_", Learner, "_", District, ".RDS"))
 }else{
@@ -43,7 +47,7 @@ if(DistrictSplit){
 # Feature importance plot for 'features'
 #i <- 1
 for(feature in features){
- if(length(unique(task$data()[,get(feature)])) > 1){
+ if(length(unique(X[,paste0(feature)])) > 1){
  assign(paste("effect_", feature, sep = ""), 
         FeatureEffect$new(predictor, feature = feature, method = "pdp+ice"))
  #assign(paste("p_", i, sep = ""), plot(get(paste0("effect_", feature))))
@@ -57,15 +61,16 @@ for(feature in features){
 #plot = ggarrange(p_1, p_2, p_3, p_4, nrow = 2, ncol = 2)
 #annotate_figure(plot, top = text_grob(paste0("Feature Effects Catboost \n District: ", District)))
 
-#plot(effect_Harv_hand_rent) +
-# # Adds a title
+#
+#plot(effect_Residue_perc) +
+ # Adds a title
 # ggtitle("Partial dependence") +
-# # Adds original predictions
+ # Adds original predictions
 # geom_point(
-#  data = X, aes(y = predictor$predict(X)[[1]], x = Harv_hand_rent),
+#  data = X, aes(y = predictor$predict(X)[[1]], x = Residue_perc),
 #  color = "pink", size = 0.5
 # )+
-# xlim(0, 8000)
+# xlim(9, 12)
 
 # get position of an normal, low and high Yield Observation
 preds = predictor$predict(X)
@@ -87,3 +92,4 @@ shapley_Med$plot() +
 shapley_q95$plot() +
  #ggtitle(paste0("Shapley Values of an Observation with high predicted Yield/Acre \n District: ", District))+
  theme(plot.title = element_text(hjust = 0.5))
+
