@@ -60,7 +60,7 @@ hotDeck = function(data, exclude = "", allcolsNA = TRUE, colsNA_names = "",
     replacementVs = vapply(missV_index,
       function(obs_id, dc) {
         single_obs = dc[obs_id, ]
-        dc = dc %>% slice(-missV_index[missV_index != obs_id])
+        if(length(missV_index) > 1) dc = dc %>% slice(-missV_index[missV_index != obs_id])
         
         if(col %in% names(sameLevel)) {
           for(i in seq_along(sameLevel[[col]])) {

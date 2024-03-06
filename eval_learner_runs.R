@@ -1,35 +1,37 @@
 library(ggplot2)
 library(dplyr)
 results = rbind(readRDS("data/results_nils.RDS"), readRDS("data/results.RDS"))
-imputTech = "hot deck"
+impute_tech = "hot deck"
 learner = "regr.catboost"
-district = "vaishali"
+District = "All"
+DistrictSplit = FALSE
 
 plot_df = results %>%
-  filter(District == district & Imputing == imputTech & Learner == learner & DistrictSplit == TRUE) %>%
-  select(Hyper_Parameter, CV_Score) %>% rowwise %>%
-  mutate(Depth = Hyper_Parameter[["depth"]], learningRate = Hyper_Parameter[["learning_rate"]],
-    Iterations = Hyper_Parameter[["iterations"]],
+  filter(District == District & Imputing == impute_tech & Learner == learner & DistrictSplit == DistrictSplit) %>%
+  select(Hyper_Parameter, CV_Score, Comment) %>% rowwise %>%
+  mutate(Depth = ifelse(is.null(Hyper_Parameter[["depth"]]), 6, Hyper_Parameter[["depth"]]),
+    learningRate = ifelse(is.null(Hyper_Parameter[["learning_rate"]]), 0.03, Hyper_Parameter[["learning_rate"]]),
+    Iterations = ifelse(is.null(Hyper_Parameter[["iterations"]]), 1000, Hyper_Parameter[["iterations"]]),
     GrowPolicy = ifelse(is.null(Hyper_Parameter[["grow_policy"]]), "SymmetricTree",
       Hyper_Parameter[["grow_policy"]]),
     RandomStrength = ifelse(is.null(Hyper_Parameter[["random_strength"]]), 1,
                             Hyper_Parameter[["random_strength"]])) %>% ungroup()
-mdpoint = plot_df %>% pull(CV_Score) %>% range() %>% mean()
+mdpoint = plot_df %>% filter(CV_Score <450) %>% pull(CV_Score) %>% range() %>% mean()
 
-plot_df %>%
+plot_df %>% filter(CV_Score < 450) %>%
  ggplot(aes(x = learningRate, y = Iterations, col = CV_Score, size = CV_Score, shape = GrowPolicy)) +
  geom_point() + scale_color_gradient2(high = "#1000FF", low = "#FF0020", mid = "#fff600",
                                       midpoint = mdpoint) +
  scale_size(trans = "reverse") + theme_minimal()
 
-plot_df %>%
+plot_df %>% filter(CV_Score < 450) %>%
  ggplot(aes(x = Depth, y = Iterations, col = CV_Score, size = CV_Score, shape = GrowPolicy)) +
  geom_point() + scale_color_gradient2(high = "#1000FF", low = "#FF0020", mid = "#fff600",
                                       midpoint = mdpoint) +
  scale_size(trans = "reverse") + scale_x_continuous(breaks = c(6, 8, 10, 12, 14)) +
  theme_minimal()
 
-plot_df %>%
+plot_df %>%  filter(CV_Score < 450) %>%
  ggplot(aes(x = learningRate, y = Depth, col = CV_Score, size = CV_Score, shape = GrowPolicy)) +
  geom_point() + scale_color_gradient2(high = "#1000FF", low = "#FF0020", mid = "#fff600",
                                       midpoint = mdpoint) +
@@ -57,10 +59,10 @@ plot_df %>%
 
 #### vaishali ranger ####
 plot_df = results %>%
-  filter(District == "vaishali" & Imputing == imputTech & Learner == "regr.ranger" & DistrictSplit == TRUE) %>%
+  filter(District == "All" & Imputing == imputTech & Learner == "regr.ranger" & DistrictSplit == districtSplit) %>%
   select(Hyper_Parameter, CV_Score, Date) %>% rowwise %>%
   mutate(mtry = ifelse(is.null(Hyper_Parameter[["mtry"]]), 4, Hyper_Parameter[["mtry"]]),
-         num.trees = Hyper_Parameter[["num.trees"]],
+         num.trees = ifelse(is.null(Hyper_Parameter[["num.trees"]]), 1000, Hyper_Parameter[["num.trees"]]),
          max.depth = ifelse(is.null(Hyper_Parameter[["max.depth"]]), 0, Hyper_Parameter[["max.depth"]]),
          min.node.size = ifelse(is.null(Hyper_Parameter[["min.node.size"]]), 5,
                                 Hyper_Parameter[["min.node.size"]]),

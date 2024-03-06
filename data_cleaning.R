@@ -1,7 +1,13 @@
 library(dplyr)
 library(lubridate)
 
-df <- read.csv("data/train_new.csv") %>%
+if(holdout) {
+  datafile = "data/train_holdout.csv"
+} else {
+  datafile = "data/train_new.csv"
+}
+
+df <- read.csv(datafile) %>%
  mutate(across(c(CropTillageDate, RcNursEstDate, SeedingSowingTransplanting,
                  Harv_date, Threshing_date), as.Date))
 
@@ -48,9 +54,12 @@ df <- df %>%
 
 # most similar to ID_YTZN9FE7PQUY is ID_2898YKTT7ABB according to the gower distance
 # november 22 instead of march 22 seems to be more likely
-df = df %>%
-  rows_update(tibble(ID = "ID_YTZN9FE7PQUY", Harv_date = as.Date("2022-11-04")),
-              by = "ID")
+if(!holdout) {
+  df = df %>%
+    rows_update(tibble(ID = "ID_YTZN9FE7PQUY", Harv_date = as.Date("2022-11-04")),
+                by = "ID")
+}
+
 # alternativ:
 #df = df %>%
 #  rows_update(tibble(ID = "ID_YTZN9FE7PQUY",
@@ -144,9 +153,11 @@ df = df %>% select(-TransIrriCost, -Harv_Month, -Threshing_Month) %>%
                          "Ganaura", "CropOrgFYM", "Yield")), ~ .x / Acre))
   
 ## select randomly 3 of the duplicated Vaishali observations (all with Yield/Acre == 44)
-dupIDs = df %>% filter(District == "Vaishali" & Yield < 45) %>% pull(ID)
-set.seed(94)
-dupIDs = sample(dupIDs, 91)
-df = df %>% filter(!ID %in% dupIDs)
-
-rm(dupIDs)
+if(FALSE) {
+  dupIDs = df %>% filter(District == "Vaishali" & Yield < 45) %>% pull(ID)
+  set.seed(94)
+  dupIDs = sample(dupIDs, 91)
+  df = df %>% filter(!ID %in% dupIDs)
+  
+  rm(dupIDs)
+}
