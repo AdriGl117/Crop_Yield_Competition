@@ -30,16 +30,22 @@ instance_ranger = fselect(
  #terminator = trm("evals", n_evals = 50)
 )
 
-fselector = fs("sequential")
+autoplot(instance_ranger, type = "performance") + 
+ theme(axis.text=element_text(size=20), axis.title=element_text(size=30,face="bold")) + 
+ ggtitle("RMSE per Batch and Feature Combination") + 
+ theme(plot.title = element_text(hjust = 0.5, size=40)) +
+ theme(legend.text = element_text(size = 20))
 
-fselector$optimize(instance_ranger)
+#fselector = fs("sequential")
+
+#fselector$optimize(instance_ranger)
 
 saveRDS(c(instance_ranger$result_feature_set),
         "features/feature_list_ranger.RDS")
 
 instance_catboost = fselect(
- fselector = fs("sequential", strategy = "sbs"), #sfs forward, sbs backwards
- task = task_vaishali,
+ fselector = fs("sequential", strategy = "sfs"), #sfs forward, sbs backwards
+ task = task_All,
  learner = lrn("regr.catboost",
                thread_count = 6),
  resampling = rsmp("cv", folds = 3),
