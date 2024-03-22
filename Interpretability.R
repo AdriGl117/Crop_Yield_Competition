@@ -15,16 +15,32 @@ holdout = FALSE
 source("data_cleaning.R")
 source("imputation.R")
 task_gaya$select(readRDS("features/feature_list_catboost_gaya.RDS"))
-task_jamui$select(readRDS("features/feature_list_catboost_jamui.RDS"))
-task_nalanda$select(readRDS("features/feature_list_catboost_nalanda.RDS"))
+task_jamui$select(readRDS("features/feature_list_ranger_jamui.RDS"))
+task_nalanda$select(readRDS("features/feature_list_ranger_nalanda.RDS"))
 task_vaishali$select(readRDS("features/feature_list_catboost_vaishali.RDS"))
-holdout = TRUE
-source("data_cleaning.R")
 DistrictSplit = FALSE
 source("imputation.R")
-
+task_All$select(readRDS("features/feature_list_ranger.RDS"))
+holdout = TRUE
+source("data_cleaning.R")
 
 #######FEATURE IMPORTANCE#######
+#All
+best_result = readRDS("data/results.RDS") %>% filter(District == "All" & Date != "2024-01-16" & Learner == "regr.ranger") %>% filter(CV_Score == min(CV_Score))
+seed = best_result$Seed
+set.seed(seed)
+learner = lrn(paste0(best_result$Learner))
+learner$param_set$values = best_result$Hyper_Parameter[[1]]
+learner$train(task_All)
+X = df_copy %>% select(task_All$feature_names)
+y = df_copy %>% select(task_All$target_names)
+predictor = Predictor$new(learner, data = X, y = y)
+importance = FeatureImp$new(predictor, loss = "rmse", n.repetitions = 100)
+plot(importance) +
+ theme_minimal() +
+ theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
+ theme(plot.title = element_text(hjust = 0.4, size=60))
+ggsave("graphics/Feature_imp_All.jpeg", dpi = 300, width = 64, height = 40, units = "cm")
 
 #Gaya
 best_result_gaya = readRDS("data/results.RDS") %>% filter(District == "gaya" & Date != "2024-01-16" & Learner == "regr.catboost" & Comment == "feature selection") %>% filter(CV_Score == min(CV_Score))
@@ -40,11 +56,12 @@ importance_gaya = FeatureImp$new(predictor_gaya, loss = "rmse", n.repetitions = 
 plot(importance_gaya) +
  theme_minimal() +
  #ggtitle("Gaya")+
- theme(axis.text=element_text(size=20), axis.title=element_text(size=30,face="bold")) + 
+ theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
  theme(plot.title = element_text(hjust = 0.4, size=60))
+ggsave("graphics/Feature_imp_Gaya.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
 #Nalanda
-best_result_nalanda = readRDS("data/results.RDS") %>% filter(District == "nalanda" & Date != "2024-01-16" & Learner == "regr.catboost" & Comment == "feature selection") %>% filter(CV_Score == min(CV_Score))
+best_result_nalanda = readRDS("data/results.RDS") %>% filter(District == "nalanda" & Date != "2024-01-16" & Learner == "regr.ranger") %>% filter(CV_Score == min(CV_Score))
 seed = best_result_nalanda$Seed
 set.seed(seed)
 learner_nalanda = lrn(paste0(best_result_nalanda$Learner))
@@ -57,11 +74,12 @@ importance_nalanda = FeatureImp$new(predictor_nalanda, loss = "rmse", n.repetiti
 plot(importance_nalanda) +
  theme_minimal() +
  #ggtitle("Nalanda") +
- theme(axis.text=element_text(size=20), axis.title=element_text(size=30,face="bold")) + 
+ theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
  theme(plot.title = element_text(hjust = 0.4, size=60))
+ggsave("graphics/Feature_imp_Nalanda.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
 #Jamui
-best_result_jamui = readRDS("data/results.RDS") %>% filter(District == "jamui" & Date != "2024-01-16" & Learner == "regr.catboost" & Comment == "feature selection") %>% filter(CV_Score == min(CV_Score))
+best_result_jamui = readRDS("data/results.RDS") %>% filter(District == "jamui" & Date != "2024-01-16" & Learner == "regr.ranger") %>% filter(CV_Score == min(CV_Score))
 seed = best_result_jamui$Seed
 set.seed(seed)
 learner_jamui = lrn(paste0(best_result_jamui$Learner))
@@ -74,8 +92,9 @@ importance_jamui = FeatureImp$new(predictor_jamui, loss = "rmse", n.repetitions 
 plot(importance_jamui) +
  theme_minimal() +
  #ggtitle("Jamui")+
- theme(axis.text=element_text(size=20), axis.title=element_text(size=30,face="bold")) + 
+ theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
  theme(plot.title = element_text(hjust = 0.4, size=60))
+ggsave("graphics/Feature_imp_Jamui.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
 #Vaishali
 best_result_vaishali = readRDS("data/results.RDS") %>% filter(District == "vaishali" & Date != "2024-01-16" & Learner == "regr.catboost" & Comment == "feature selection") %>% filter(CV_Score == min(CV_Score))
@@ -91,11 +110,31 @@ importance_vaishali = FeatureImp$new(predictor_vaishali, loss = "rmse", n.repeti
 plot(importance_vaishali) +
  theme_minimal() +
  #ggtitle("Vaishali")+
- theme(axis.text=element_text(size=20), axis.title=element_text(size=30,face="bold")) + 
+ theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
  theme(plot.title = element_text(hjust = 0.4, size=60))
+ggsave("graphics/Feature_imp_Vaishali.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
 #######FEATURE EFFECTS#######
-#Gaya
+#All
+i = 1
+features = importance$results[1:4, 1]
+for(feature in features){
+ assign(paste("effect_", feature, sep = ""), 
+        FeatureEffect$new(predictor, feature = feature, method = "pdp+ice"))
+ assign(paste0("p_",i), plot(get(paste0("effect_", feature)))+
+         theme_minimal() +
+         #ggtitle(paste0("PDP and ICE Curve \n Gaya"))+
+         #theme(plot.title = element_text(hjust = 0.5))+
+         theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold")) 
+        #theme(plot.title = element_text(hjust = 0.4, size=40)))
+ )
+ i = i + 1
+}
+FE_All = ggarrange(p_1, p_2, p_3, p_4, nrow = 2, ncol = 2)
+FE_All
+ggsave("graphics/Feature_Effects_All.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
+
+ #Gaya
 i = 1
 features_Gaya = importance_gaya$results[1:4, 1]
 for(feature in features_Gaya){
@@ -111,12 +150,14 @@ for(feature in features_Gaya){
   #plot(get(paste0("p_gaya_", i)))
   i = i + 1
 }
-p_gaya_2 = p_gaya_2 +
- xlim(0, 18)
+p_gaya_1 = p_gaya_1 +
+ xlim(0, 4000)
 
 FE_Gaya = ggarrange(p_gaya_1, p_gaya_2, p_gaya_3, p_gaya_4, nrow = 2, ncol = 2)
 FE_Gaya
+ggsave("graphics/Feature_Effects_Gaya.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
+#Jamui
 i = 1
 features_Jamui = importance_jamui$results[1:4, 1]
 for(feature in features_Jamui){
@@ -137,7 +178,9 @@ p_jamui_2 = p_jamui_2 +
 p_jamui_2
 FE_Jamui = ggarrange(p_jamui_1, p_jamui_2, p_jamui_3, p_jamui_4, nrow = 2, ncol = 2)
 FE_Jamui
+ggsave("graphics/Feature_Effects_Jamui.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
+#Nalanda
 i = 1
 features_Nalanda = importance_nalanda$results[c(1,4,9,13), 1]
 features_Nalanda = importance_nalanda$results[1:4, 1]
@@ -157,7 +200,9 @@ for(feature in features_Nalanda){
 
 FE_Nalanda = ggarrange(p_nalanda_1, p_nalanda_2, p_nalanda_3, p_nalanda_4, nrow = 2, ncol = 2)
 FE_Nalanda
+ggsave("graphics/Feature_Effects_Nalanda.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
+#Vaishali
 i = 1
 features_Vaishali = importance_vaishali$results[2:5, 1]
 for(feature in features_Vaishali){
@@ -176,8 +221,16 @@ for(feature in features_Vaishali){
 
 FE_Vaishali = ggarrange(p_vaishali_1, p_vaishali_2, p_vaishali_3, p_vaishali_4, nrow = 2, ncol = 2)
 FE_Vaishali
+ggsave("graphics/Feature_Effects_Vaishali.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
 #######Shapley Values#######
+#All
+preds = predictor$predict(X)
+preds_sort = sort(preds$predict.model..newdata...newdata.)
+Med_All = which(preds$predict.model..newdata...newdata. == preds_sort[round(length(preds_sort)*0.5)])
+q5_All = which(preds$predict.model..newdata...newdata. == preds_sort[round(length(preds_sort)*0.05)])
+q95_All = which(preds$predict.model..newdata...newdata. == preds_sort[round(length(preds_sort)*0.95)])
+
 #Gaya
 preds_Gaya = predictor_gaya$predict(X_gaya)
 preds_Gaya_sort = sort(preds_Gaya$predict.model..newdata...newdata.)
@@ -207,6 +260,7 @@ q5_Vaishali = which(preds_Vaishali$predict.model..newdata...newdata. == preds_Va
 q95_Vaishali = which(preds_Vaishali$predict.model..newdata...newdata. == preds_Vaishali_sort[round(length(preds_Vaishali_sort)*0.9)])
 
 # Plot for low Predicted Yields
+shapley_q5_All = Shapley$new(predictor, x.interest = X[q5_All,], sample.size = 100)
 shapley_q5_gaya = Shapley$new(predictor_gaya, x.interest = X_gaya[q5_Gaya,], sample.size = 100)
 shapley_q5_nalanda = Shapley$new(predictor_nalanda, x.interest = X_nalanda[q5_Nalanda,], sample.size = 100)
 shapley_q5_jamui = Shapley$new(predictor_jamui, x.interest = X_jamui[q5_Jamui,], sample.size = 100)
@@ -235,6 +289,7 @@ plot_q5_vaishali = plot(shapley_q5_vaishali) +
 ggarrange(plot_q5_gaya, plot_q5_jamui, plot_q5_nalanda, plot_q5_vaishali, nrow = 2, ncol = 2)
 
 # Plot for average Predicted Yields
+shapley_med_All = Shapley$new(predictor, x.interest = X[Med_All,], sample.size = 100)
 shapley_med_gaya = Shapley$new(predictor_gaya, x.interest = X_gaya[Med_Gaya,], sample.size = 100)
 shapley_med_nalanda = Shapley$new(predictor_nalanda, x.interest = X_nalanda[Med_Nalanda,], sample.size = 100)
 shapley_med_jamui = Shapley$new(predictor_jamui, x.interest = X_jamui[Med_Jamui,], sample.size = 100)
@@ -259,6 +314,7 @@ plot_med_vaishali = plot(shapley_med_vaishali) +
 ggarrange(plot_med_gaya, plot_med_jamui, plot_med_nalanda, plot_med_vaishali, nrow = 2, ncol = 2)
 
 # Plot for high Predicted Yields
+shapley_q95_All = Shapley$new(predictor, x.interest = X[q95_All,], sample.size = 100)
 shapley_q95_gaya = Shapley$new(predictor_gaya, x.interest = X_gaya[q95_Gaya,], sample.size = 100)
 shapley_q95_nalanda = Shapley$new(predictor_nalanda, x.interest = X_nalanda[q95_Nalanda,], sample.size = 100)
 shapley_q95_jamui = Shapley$new(predictor_jamui, x.interest = X_jamui[q95_Jamui,], sample.size = 100)
@@ -283,97 +339,29 @@ plot_q95_vaishali = plot(shapley_q95_vaishali) +
 ggarrange(plot_q95_gaya, plot_q95_jamui, plot_q95_nalanda, plot_q95_vaishali, nrow = 2, ncol = 2)
 
 
-plot_q5_nalanda = plot(shapley_q5_nalanda) + 
+plot(shapley_q5_All) + 
  theme_minimal() +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+ theme(plot.title = element_text(hjust = 0.4, size = 30, face = "bold"),
+       axis.text=element_text(size=30),
+       axis.title=element_text(size=30,face="bold")) #+
+ggsave("graphics/Shapley_low_All.jpeg", dpi = 300, width = 60, height = 45, units = "cm")
 
-plot_med_nalanda = plot(shapley_med_nalanda) + 
+plot(shapley_med_All) + 
  theme_minimal() +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+ theme(plot.title = element_text(hjust = 0.4, size = 30, face = "bold"),
+       axis.text=element_text(size=30),
+       axis.title=element_text(size=30,face="bold"))
+ggsave("graphics/Shapley_mid_All.jpeg", dpi = 300, width = 60, height = 45, units = "cm")
 
-plot_q95_nalanda = plot(shapley_q95_nalanda) + 
+plot(shapley_q95_All) + 
  theme_minimal() +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+ theme(plot.title = element_text(hjust = 0.4, size = 30, face = "bold"),
+       axis.text=element_text(size=30),
+       axis.title=element_text(size=30,face="bold"))
+ggsave("graphics/Shapley_high_All.jpeg", dpi = 300, width = 60, height = 45, units = "cm")
 
 plot_q5_nalanda
 plot_med_nalanda
 plot_q95_nalanda
 
 
-
-
-best_result = readRDS("data/results.RDS") %>% filter(District == "All" & Date != "2024-01-16" & Learner == "regr.catboost") %>% filter(CV_Score == min(CV_Score))
-
-if(best_result$Learner == "regr.ranger"){
- features = readRDS("features/feature_list_ranger.RDS")
- task_All$select(features)
-}else{
- features = readRDS("features/feature_list_catboost.RDS")
- task_All$select(features)
-}
-
-learner = lrn(paste0(best_result$Learner))
-learner$param_set$values = best_result$Hyper_Parameter[[1]]
-split = partition(task_All, ratio = 0.8)
-learner$train(task_All, row_ids = split$train)
-
-
-# Features in test data
-X = task_All$data(rows = split$test, cols = task_All$feature_names)
-
-# Target in test data
-y = task_All$data(rows = split$test, cols = task_All$target_names)
-
-predictor = Predictor$new(learner, data = X, y = y)
-
-# Feature Importance Plot
-importance = FeatureImp$new(predictor, loss = "rmse", n.repetitions = 100)
-plot(importance) +
- ggtitle("Feature Importance")+
- theme(plot.title = element_text(hjust = 0.4))
-
-# Feature importance plot for 'features'
-for(feature in features){
- if(length(unique(X[,paste0(feature)])) > 1){
-  assign(paste("effect_", feature, sep = ""), 
-         FeatureEffect$new(predictor, feature = feature, method = "pdp+ice"))
-  assign("p", plot(get(paste0("effect_", feature)))+
-          ggtitle(paste0("PDP and ICE Curve"))+
-          theme(plot.title = element_text(hjust = 0.5)))
-  plot(p)
- }
-}
-#plot = ggarrange(p_1, p_2, p_3, p_4, nrow = 2, ncol = 2)
-#annotate_figure(plot, top = text_grob(paste0("Feature Effects Catboost \n District: ", District)))
-
-#
-#plot(effect_Residue_perc) +
-# Adds a title
-# ggtitle("Partial dependence") +
-# Adds original predictions
-# geom_point(
-#  data = X, aes(y = predictor$predict(X)[[1]], x = Residue_perc),
-#  color = "pink", size = 0.5
-# )+
-# xlim(9, 12)
-
-# get position of an normal, low and high Yield Observation
-preds = predictor$predict(X)
-preds_sort = sort(preds$predict.model..newdata...newdata.)
-Med = which(preds$predict.model..newdata...newdata. == preds_sort[round(length(preds_sort)/2)])
-q5 = which(preds$predict.model..newdata...newdata. == preds_sort[round(length(preds_sort)*0.05)])
-q95 = which(preds$predict.model..newdata...newdata. == preds_sort[round(length(preds_sort)*0.95)])
-
-# Plot Shapley
-shapley_q5 = Shapley$new(predictor, x.interest = X[q5,], sample.size = 100)
-shapley_Med = Shapley$new(predictor, x.interest = X[Med,], sample.size = 100)
-shapley_q95 = Shapley$new(predictor, x.interest = X[q95,], sample.size = 100)
-shapley_q5$plot() +
- #ggtitle(paste0("Shapley Values of an Observation with low predicted Yield/Acre \n District: ", District))+
- theme(plot.title = element_text(hjust = 0.5))
-shapley_Med$plot() +
- #ggtitle(paste0("Shapley Values of an Observation with average predicted Yield/Acre \n District: ", District))+
- theme(plot.title = element_text(hjust = 0.5))
-shapley_q95$plot() +
- #ggtitle(paste0("Shapley Values of an Observation with high predicted Yield/Acre \n District: ", District))+
- theme(plot.title = element_text(hjust = 0.5))
