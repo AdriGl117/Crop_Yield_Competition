@@ -9,7 +9,8 @@ Imputing <- impute_tech
 Time <- learner$timings[[1]]
 DistrictSplit = FALSE
 District = "All"
+fselector <- "genetic_search"
 
-results <- data.table::data.table(Date, Seed, Learner, Hyper_Parameter, Features, Imputing, Time, Resampling_folds, CV_Score, Comment, DistrictSplit, District)
+results_Adrian <- data.table::data.table(Date, Seed, Learner, Hyper_Parameter, Features, Imputing, Time, Resampling_folds, CV_Score, Comment, DistrictSplit, District)
 
 saveRDS(results, file = "data/results.RDS")
