@@ -9,7 +9,7 @@ Seed <- 11931
 sourcing = TRUE
 impute_tech = "hot deck"
 DistrictSplit = FALSE
-holdout = FALSE
+holdout = TRUE
 source("data_cleaning.R")
 
 ## upsampling of underrepresentated areas in each District

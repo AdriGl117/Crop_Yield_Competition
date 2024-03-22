@@ -73,6 +73,7 @@ hp_df = results %>%
                            Hyper_Parameter[["replace"]])) %>% ungroup() %>%
  arrange(CV_Score) %>% distinct()
 
+# creates the best model for each configuration and saves them in models path
 for(district in loop_district_var) {
   
   if(learner == "regr.catboost") {
@@ -104,17 +105,22 @@ holdoutIDs = df$ID
 df = rbind(df_copy, df %>% mutate(OrgFertilizers_Pranamrit = 0, FirstTopDressFert_Other = 0,
                          FirstTopDressFert_SSP = 0))
 source("imputation.R")
+# don't forget the feature list if changing the learner
 task_All$select(readRDS("features/feature_list_ranger.RDS"))
 task_gaya$select(readRDS("features/feature_list_catboost_gaya.RDS"))
 task_jamui$select(readRDS("features/feature_list_catboost_jamui.RDS"))
 task_nalanda$select(readRDS("features/feature_list_catboost_nalanda.RDS"))
 task_vaishali$select(readRDS("features/feature_list_catboost_vaishali.RDS"))
 
+# only use when creating modelList new
 modelList = data.table(Seed = integer(0), Learner = character(0), DistrictSplit = logical(0),
    District = character(0), featureSelection = logical(0), oversampling = logical(0),
    trainTime = numeric(0), trainRMSE = numeric(0), trainRMSE_comb = numeric(0),
    holdoutRMSE = numeric(0), holdoutRMSE_comb = numeric(0))
+# use when adding to modelList
+modelList = readRDS("models/modperformance.rds")
 
+# don't forget to change the parameters of featureSelection and oversampling
 for(District in loop_district_var) {
   curr_mod = paste0("modLearner_", District)
   curr_task = paste0("task_", District)
