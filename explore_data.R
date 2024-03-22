@@ -13,6 +13,16 @@ var_description <- var_description %>%
 str(df)
 table(apply(df, 1, function(x) {sum(is.na(x))}))
 
+# Acre Yield comparison
+df %>% mutate(outlier = Yield / Acre > 6500) %>%
+        ggplot(aes(x = Acre, y = Yield, col = outlier)) + geom_point() +
+        geom_abline(slope = 6500, col = "#F1130E", linewidth = 1.1) +
+        scale_color_manual(values = c("TRUE" = "#F1130E", "FALSE" = "#0EECF1"),
+                           breaks = c("TRUE", "FALSE")) +
+        theme_minimal()
+ggsave("graphics/YieldAcre_outliers.jpeg", height = 9, width = 16, units = "cm", dpi = 500,
+       scale = 1)
+
 # reduce the number of levels
 table(df$LandPreparationMethod)
 unique(unlist(strsplit(df$LandPreparationMethod, " ")))
