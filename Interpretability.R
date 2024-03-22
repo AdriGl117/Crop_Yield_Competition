@@ -37,10 +37,8 @@ y = df_copy %>% select(task_All$target_names)
 predictor = Predictor$new(learner, data = X, y = y)
 importance = FeatureImp$new(predictor, loss = "rmse", n.repetitions = 100)
 plot(importance) +
- theme_minimal() +
- theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
- theme(plot.title = element_text(hjust = 0.4, size=60))
-ggsave("graphics/Feature_imp_All.jpeg", dpi = 300, width = 64, height = 40, units = "cm")
+ theme_minimal()
+ggsave("graphics/Feature_imp_All.jpeg")
 
 #Gaya
 best_result_gaya = readRDS("data/results.RDS") %>% filter(District == "gaya" & Date != "2024-01-16" & Learner == "regr.catboost" & Comment == "feature selection") %>% filter(CV_Score == min(CV_Score))
@@ -55,10 +53,8 @@ predictor_gaya = Predictor$new(learner_gaya, data = X_gaya, y = y_gaya)
 importance_gaya = FeatureImp$new(predictor_gaya, loss = "rmse", n.repetitions = 100)
 plot(importance_gaya) +
  theme_minimal() +
- #ggtitle("Gaya")+
- theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
- theme(plot.title = element_text(hjust = 0.4, size=60))
-ggsave("graphics/Feature_imp_Gaya.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
+ xlim(1, 2.5)
+ggsave("graphics/Feature_imp_Gaya.jpeg")
 
 #Nalanda
 best_result_nalanda = readRDS("data/results.RDS") %>% filter(District == "nalanda" & Date != "2024-01-16" & Learner == "regr.ranger") %>% filter(CV_Score == min(CV_Score))
@@ -72,11 +68,8 @@ y_nalanda = df_copy %>% filter(District == "Nalanda") %>% select(task_nalanda$ta
 predictor_nalanda = Predictor$new(learner_nalanda, data = X_nalanda, y = y_nalanda)
 importance_nalanda = FeatureImp$new(predictor_nalanda, loss = "rmse", n.repetitions = 100)
 plot(importance_nalanda) +
- theme_minimal() +
- #ggtitle("Nalanda") +
- theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
- theme(plot.title = element_text(hjust = 0.4, size=60))
-ggsave("graphics/Feature_imp_Nalanda.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
+ theme_minimal()
+ggsave("graphics/Feature_imp_Nalanda.jpeg")
 
 #Jamui
 best_result_jamui = readRDS("data/results.RDS") %>% filter(District == "jamui" & Date != "2024-01-16" & Learner == "regr.ranger") %>% filter(CV_Score == min(CV_Score))
@@ -90,11 +83,8 @@ y_jamui = df_copy %>% filter(District == "Jamui") %>% select(task_jamui$target_n
 predictor_jamui = Predictor$new(learner_jamui, data = X_jamui, y = y_jamui)
 importance_jamui = FeatureImp$new(predictor_jamui, loss = "rmse", n.repetitions = 100)
 plot(importance_jamui) +
- theme_minimal() +
- #ggtitle("Jamui")+
- theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
- theme(plot.title = element_text(hjust = 0.4, size=60))
-ggsave("graphics/Feature_imp_Jamui.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
+ theme_minimal()
+ggsave("graphics/Feature_imp_Jamui.jpeg")
 
 #Vaishali
 best_result_vaishali = readRDS("data/results.RDS") %>% filter(District == "vaishali" & Date != "2024-01-16" & Learner == "regr.catboost" & Comment == "feature selection") %>% filter(CV_Score == min(CV_Score))
@@ -108,11 +98,8 @@ y_vaishali = df_copy %>% filter(District == "Vaishali") %>% select(task_vaishali
 predictor_vaishali = Predictor$new(learner_vaishali, data = X_vaishali, y = y_vaishali)
 importance_vaishali = FeatureImp$new(predictor_vaishali, loss = "rmse", n.repetitions = 100)
 plot(importance_vaishali) +
- theme_minimal() +
- #ggtitle("Vaishali")+
- theme(axis.text=element_text(size=30), axis.title=element_text(size=30,face="bold")) + 
- theme(plot.title = element_text(hjust = 0.4, size=60))
-ggsave("graphics/Feature_imp_Vaishali.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
+ theme_minimal() 
+ggsave("graphics/Feature_imp_Vaishali.jpeg")
 
 #######FEATURE EFFECTS#######
 #All
@@ -125,13 +112,15 @@ for(feature in features){
          theme_minimal() +
          #ggtitle(paste0("PDP and ICE Curve \n Gaya"))+
          #theme(plot.title = element_text(hjust = 0.5))+
-         theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold")) 
+         theme(axis.text=element_text(size=10), axis.title=element_text(size=10,face="bold")) 
         #theme(plot.title = element_text(hjust = 0.4, size=40)))
  )
  i = i + 1
 }
+
 FE_All = ggarrange(p_1, p_2, p_3, p_4, nrow = 2, ncol = 2)
 FE_All
+
 ggsave("graphics/Feature_Effects_All.jpeg", dpi = 300, width = 64, height = 32, units = "cm")
 
  #Gaya
@@ -204,13 +193,12 @@ ggsave("graphics/Feature_Effects_Nalanda.jpeg", dpi = 300, width = 64, height = 
 
 #Vaishali
 i = 1
-features_Vaishali = importance_vaishali$results[2:5, 1]
+features_Vaishali = importance_vaishali$results[1:4, 1]
 for(feature in features_Vaishali){
  assign(paste("effect_", feature, sep = ""), 
         FeatureEffect$new(predictor_vaishali, feature = feature, method = "pdp+ice"))
- assign(paste0("p_vaishali_",i), plot(get(paste0("effect_", feature)))+
+ assign(paste0("p_vaishali_",i), plot(get(paste0("effect_", feature))) +
          theme_minimal() +
-         labs(y = NULL) +
          #ggtitle(paste0("PDP and ICE Curve \n Vaishali"))+
          #theme(plot.title = element_text(hjust = 0.5))+
          theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold")) 
@@ -266,27 +254,33 @@ shapley_q5_nalanda = Shapley$new(predictor_nalanda, x.interest = X_nalanda[q5_Na
 shapley_q5_jamui = Shapley$new(predictor_jamui, x.interest = X_jamui[q5_Jamui,], sample.size = 100)
 shapley_q5_vaishali = Shapley$new(predictor_vaishali, x.interest = X_vaishali[q5_Vaishali,], sample.size = 100)
 
-plot_q5_gaya = plot(shapley_q5_gaya) + 
- labs(caption = "Gaya") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+plot(shapley_q5_All) + 
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))#,
+#axis.text=element_text(size=30),
+#axis.title=element_text(size=30,face="bold")) #+
+ggsave("graphics/Shapley_mid_All.jpeg")
+
+plot(shapley_q5_gaya) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_low_Gaya.jpeg")
+
+plot(shapley_q5_nalanda) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_low_Nalanda.jpeg")
 
 
-plot_q5_nalanda = plot(shapley_q5_nalanda) + 
- labs(caption = "Nalanda") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+plot(shapley_q5_jamui) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_low_Jamui.jpeg")
 
-
-plot_q5_jamui = plot(shapley_q5_jamui) + 
- labs(caption = "Jamui") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
-
-
-plot_q5_vaishali = plot(shapley_q5_vaishali) + 
- labs(caption = "Vaishali") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
-
-
-ggarrange(plot_q5_gaya, plot_q5_jamui, plot_q5_nalanda, plot_q5_vaishali, nrow = 2, ncol = 2)
+plot(shapley_q5_vaishali) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_low_Vaishali.jpeg")
 
 # Plot for average Predicted Yields
 shapley_med_All = Shapley$new(predictor, x.interest = X[Med_All,], sample.size = 100)
@@ -295,23 +289,32 @@ shapley_med_nalanda = Shapley$new(predictor_nalanda, x.interest = X_nalanda[Med_
 shapley_med_jamui = Shapley$new(predictor_jamui, x.interest = X_jamui[Med_Jamui,], sample.size = 100)
 shapley_med_vaishali = Shapley$new(predictor_vaishali, x.interest = X_vaishali[Med_Vaishali,], sample.size = 100)
 
-plot_med_gaya = plot(shapley_med_gaya) + 
- labs(caption = "Gaya") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+plot(shapley_med_All) + 
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))#,
+#axis.text=element_text(size=30),
+#axis.title=element_text(size=30,face="bold"))
+ggsave("graphics/Shapley_mid_All.jpeg")#, dpi = 300, width = 60, height = 45, units = "cm")
 
-plot_med_nalanda = plot(shapley_med_nalanda) + 
- labs(caption = "Nalanda") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+plot(shapley_med_gaya) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_mid_Gaya.jpeg")
 
-plot_med_jamui = plot(shapley_med_jamui) + 
- labs(caption = "Jamui") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+plot(shapley_med_nalanda) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_mid_Nalanda.jpeg")
 
-plot_med_vaishali = plot(shapley_med_vaishali) + 
- labs(caption = "Vaishali") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
+plot(shapley_med_jamui) + 
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_mid_Jamui.jpeg")
 
-ggarrange(plot_med_gaya, plot_med_jamui, plot_med_nalanda, plot_med_vaishali, nrow = 2, ncol = 2)
+plot(shapley_med_vaishali) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_mid_Vaishali.jpeg")
 
 # Plot for high Predicted Yields
 shapley_q95_All = Shapley$new(predictor, x.interest = X[q95_All,], sample.size = 100)
@@ -320,48 +323,29 @@ shapley_q95_nalanda = Shapley$new(predictor_nalanda, x.interest = X_nalanda[q95_
 shapley_q95_jamui = Shapley$new(predictor_jamui, x.interest = X_jamui[q95_Jamui,], sample.size = 100)
 shapley_q95_vaishali = Shapley$new(predictor_vaishali, x.interest = X_vaishali[q95_Vaishali,], sample.size = 100)
 
-plot_q95_gaya = plot(shapley_q95_gaya) + 
- labs(caption = "Gaya") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
-
-plot_q95_nalanda = plot(shapley_q95_nalanda) + 
- labs(caption = "Nalanda") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
-
-plot_q95_jamui = plot(shapley_q95_jamui) + 
- labs(caption = "Jamui") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
-
-plot_q95_vaishali = plot(shapley_q95_vaishali) + 
- labs(caption = "Vaishali") +
- theme(plot.caption = element_text(hjust = 0.5, size = 20, face = "bold"))
-
-ggarrange(plot_q95_gaya, plot_q95_jamui, plot_q95_nalanda, plot_q95_vaishali, nrow = 2, ncol = 2)
-
-
-plot(shapley_q5_All) + 
- theme_minimal() +
- theme(plot.title = element_text(hjust = 0.4, size = 30, face = "bold"),
-       axis.text=element_text(size=30),
-       axis.title=element_text(size=30,face="bold")) #+
-ggsave("graphics/Shapley_low_All.jpeg", dpi = 300, width = 60, height = 45, units = "cm")
-
-plot(shapley_med_All) + 
- theme_minimal() +
- theme(plot.title = element_text(hjust = 0.4, size = 30, face = "bold"),
-       axis.text=element_text(size=30),
-       axis.title=element_text(size=30,face="bold"))
-ggsave("graphics/Shapley_mid_All.jpeg", dpi = 300, width = 60, height = 45, units = "cm")
-
 plot(shapley_q95_All) + 
  theme_minimal() +
- theme(plot.title = element_text(hjust = 0.4, size = 30, face = "bold"),
-       axis.text=element_text(size=30),
-       axis.title=element_text(size=30,face="bold"))
-ggsave("graphics/Shapley_high_All.jpeg", dpi = 300, width = 60, height = 45, units = "cm")
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))#,
+#axis.text=element_text(size=30),
+#axis.title=element_text(size=30,face="bold")) #+
+ggsave("graphics/Shapley_high_All.jpeg")
 
-plot_q5_nalanda
-plot_med_nalanda
-plot_q95_nalanda
+plot(shapley_q95_gaya) + 
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_high_Gaya.jpeg")
 
+plot(shapley_q95_nalanda) + 
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_high_Nalanda.jpeg")
 
+plot(shapley_q95_jamui) + 
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_high_Jamui.jpeg")
+
+plot(shapley_q95_vaishali) +
+ theme_minimal() +
+ theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"))
+ggsave("graphics/Shapley_high_Vaishali.jpeg")
