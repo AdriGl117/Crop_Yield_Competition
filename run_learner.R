@@ -5,10 +5,11 @@ library(mlr3mbo)
 library(data.table)
 library(mlr3learners.catboost)
 
-Seed <- 71349
+Seed <- 11931
 sourcing = TRUE
 impute_tech = "hot deck"
-DistrictSplit = TRUE
+DistrictSplit = FALSE
+holdout = FALSE
 source("data_cleaning.R")
 
 ## upsampling of underrepresentated areas in each District
@@ -39,7 +40,7 @@ df = rbind(df,
                                function(x) {which(ID == x)}, FUN.VALUE = 1)))
 
 source("imputation.R")
-#task_All$select(readRDS("data/feature_list_catboost.RDS"))
+task_All$select(readRDS("features/feature_list_ranger.RDS"))
 task_gaya$select(readRDS("features/feature_list_catboost_gaya.RDS"))
 task_jamui$select(readRDS("features/feature_list_catboost_jamui.RDS"))
 task_nalanda$select(readRDS("features/feature_list_catboost_nalanda.RDS"))
@@ -84,7 +85,11 @@ hp_rdist = list("gaya" = list("iterations" = c(150, 450), "depth" = c(8.5, 14.5)
       "learning_rate" = c(0.033, 0.1), "grow_policy" = c("Depthwise", "SymmetricTree"), "max.depth" = c(5.5, 9.5),
       "mtry" = c(5.5, 12.5), "min.node.size" = c(3.5, 5.5)),
   "nalanda" = list("iterations" = c(100, 400), "depth" = c(9.5, 15.5),
-      "learning_rate" = c(0.075, 0.145), "grow_policy" = c("Depthwise", "SymmetricTree")))
+      "learning_rate" = c(0.075, 0.145), "grow_policy" = c("Depthwise", "SymmetricTree")),
+  "All" = list("iterations" = c(150, 1000), "depth" = c(7.5, 13.5),
+      "learning_rate" = c(0.01, 0.095), "grow_policy" = c("Depthwise", "SymmetricTree"),
+      "num.trees" = c(800, 1200), "max.depth" = c(0, 0.5),
+      "mtry" = c(4.5, 12.5), "min.node.size" = c(3.5, 5.5)))
 
 # Evaluation Model
 if(DistrictSplit) {
@@ -92,7 +97,7 @@ if(DistrictSplit) {
 } else {
  loop_district_var = "All"
 }
-for(i in 1:20) {
+for(i in 1:25) {
   Seed = Seed + i
   for(District in loop_district_var) {
     hp_param = list(iterations = round(runif(1, hp_rdist[[District]]$iterations[[1]], hp_rdist[[District]]$iterations[[2]])),
@@ -107,7 +112,7 @@ for(i in 1:20) {
     
     set.seed(Seed)
     learner = lrn("regr.catboost",
-                  thread_count = 6,
+                 thread_count = 6,
                   iterations = hp_param[["iterations"]],
                   learning_rate = hp_param[["learning_rate"]],
                   depth = hp_param[["depth"]],
@@ -125,7 +130,7 @@ for(i in 1:20) {
     
     rmse = rr$aggregate(msr("regr.rmse"))[[1]]
     
-    Comment = "feature selection + oversampling"
+    Comment = "no feature selection"
     
     learner$train(get(paste0("task_", District)))
     

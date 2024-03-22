@@ -7,8 +7,8 @@ library(mlr3learners.catboost)
 impute_tech = "hot deck"
 learner = "regr.ranger"
 DistrictSplit = TRUE
-config = "^feature selection$"
-savefile = "rangerSplitFS_"
+config = "feature selection"
+savefile = "catboostSplitFS_"
 sourcing = TRUE
 
 if(DistrictSplit) {
@@ -48,15 +48,16 @@ df = rbind(df,
       function(x) {which(ID == x)}, FUN.VALUE = 1)))
 
 source("imputation.R")
-task_All$select(readRDS("features/feature_list_ranger.RDS"))
+task_All$select(readRDS("features/feature_list_catboost.RDS"))
 task_gaya$select(readRDS("features/feature_list_ranger_gaya.RDS"))
 task_jamui$select(readRDS("features/feature_list_ranger_jamui.RDS"))
 task_nalanda$select(readRDS("features/feature_list_ranger_nalanda.RDS"))
 task_vaishali$select(readRDS("features/feature_list_ranger_vaishali.RDS"))
 
 hp_df = results %>%
- filter(Imputing == impute_tech & Learner == learner & DistrictSplit == DistrictSplit) %>%
- select(Seed, Hyper_Parameter, CV_Score, District) %>% rowwise %>%
+ filter(Imputing == impute_tech & Learner == learner & DistrictSplit == DistrictSplit &
+          Comment == config) %>%
+ select(Date, Seed, Hyper_Parameter, CV_Score, District) %>% rowwise %>%
  mutate(Depth = Hyper_Parameter[["depth"]], learningRate = Hyper_Parameter[["learning_rate"]],
         Iterations = Hyper_Parameter[["iterations"]],
         GrowPolicy = ifelse(is.null(Hyper_Parameter[["grow_policy"]]), "SymmetricTree",
@@ -70,10 +71,10 @@ hp_df = results %>%
                                Hyper_Parameter[["min.node.size"]]),
         bootstrap = ifelse(is.null(Hyper_Parameter[["replace"]]), FALSE,
                            Hyper_Parameter[["replace"]])) %>% ungroup() %>%
- arrange(CV_Score)
+ arrange(CV_Score) %>% distinct()
 
 for(district in loop_district_var) {
-  set.seed(hp_df %>% filter(District == district) %>% slice(1) %>% pull(Seed))
+  
   if(learner == "regr.catboost") {
     modLearner = lrn(learner, thread_count = 6,
                      iterations = hp_df %>% filter(District == district) %>% slice(1) %>% pull(Iterations),
@@ -89,6 +90,8 @@ for(district in loop_district_var) {
                      min.node.size = hp_df %>% filter(District == district) %>% slice(1) %>% pull(min.node.size),
                      replace = hp_df %>% filter(District == district) %>% slice(1) %>% pull(bootstrap))
   }
+  set.seed(hp_df %>% filter(District == district) %>% slice(1) %>% pull(Seed))
+  rr = resample(get(paste0("task_", district)), modLearner, cv)
   
   modLearner$train(get(paste0("task_", district)))
   assign(paste0("modLearner_", district), modLearner$clone())
@@ -102,10 +105,10 @@ df = rbind(df_copy, df %>% mutate(OrgFertilizers_Pranamrit = 0, FirstTopDressFer
                          FirstTopDressFert_SSP = 0))
 source("imputation.R")
 task_All$select(readRDS("features/feature_list_ranger.RDS"))
-task_gaya$select(readRDS("features/feature_list_ranger_gaya.RDS"))
-task_jamui$select(readRDS("features/feature_list_ranger_jamui.RDS"))
-task_nalanda$select(readRDS("features/feature_list_ranger_nalanda.RDS"))
-task_vaishali$select(readRDS("features/feature_list_ranger_vaishali.RDS"))
+task_gaya$select(readRDS("features/feature_list_catboost_gaya.RDS"))
+task_jamui$select(readRDS("features/feature_list_catboost_jamui.RDS"))
+task_nalanda$select(readRDS("features/feature_list_catboost_nalanda.RDS"))
+task_vaishali$select(readRDS("features/feature_list_catboost_vaishali.RDS"))
 
 modelList = data.table(Seed = integer(0), Learner = character(0), DistrictSplit = logical(0),
    District = character(0), featureSelection = logical(0), oversampling = logical(0),
